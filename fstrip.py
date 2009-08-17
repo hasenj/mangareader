@@ -9,8 +9,15 @@
 
 from PyQt4 import QtGui, QtCore
 
-def create_frame(image_path):
-    return QtGui.QImage(image_path)
+def create_frame(image_path, width=None):
+    """Load a picture into a frame
+       @param width: optional, if present, scale image width to match width
+    """
+    # TODO: add some padding maybe
+    frame = QtGui.QImage(image_path)
+    if width:
+        frame = frame.scaledToWidth(width, QtCore.Qt.SmoothTransformation)
+    return frame
 
 def paint_frame(painter, frame, y):
     """Draw a single frame at vertical position `y` """
@@ -23,7 +30,7 @@ def paint_frames(painter, frames, y):
     while frames and y < painter.viewport().height():
         frame = frames[0]
         frame_height = frame.rect().height()
-        if y + frame_height > 0: # don't draw something that won't be even visible
+        if y + frame_height > 0: # don't draw something that won't even be visible
             paint_frame(painter, frame, y)
         y += frame_height 
         frames = frames[1:]

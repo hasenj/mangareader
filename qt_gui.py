@@ -21,8 +21,7 @@ def load_frames(path):
         _, ext = os.path.splitext(file)
         if ext in ['.png', '.jpg', '.jpeg']:
             image_path = os.path.join(path, file)
-            print "loading:", image_path
-            yield fstrip.create_frame(image_path)
+            yield fstrip.create_frame(image_path, 700)
 
 class MangaWidget(fstrip.FilmStrip):
     def __init__(self, parent=None):
