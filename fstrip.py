@@ -20,8 +20,25 @@ def paint_frame(painter, frame, y):
 
 def paint_frames(painter, frames, y):
     """Draw a list of frames starting at vertical position `y`"""
-    while frames and y < painter.viewpoert().height():
+    while frames and y < painter.viewport().height():
         paint_frame(painter, frames[0], y)
         y += frames[0].rect().height()
         frames = frames[1:]
+
+class FilmStrip(QtGui.QWidget):
+    """A Film Strip is a widget that draw a list of pictures vertically"""
+    def __init__(self, parent=None):
+        QtGui.QWidget.__init__(self, parent)
+        self.frames = []
+        self.y = 0
+
+    def setFrames(self, frames, y):
+        self.frames = frames
+        self.y = y
+    
+    def paintEvent(self, event):
+        painter = QtGui.QPainter()
+        painter.begin(self)
+        paint_frames(painter, self.frames, self.y)
+        painter.end()
 

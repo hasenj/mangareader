@@ -8,29 +8,34 @@
 test_image = "/home/hasenj/manga/skipbeat17/01.png"
 test_path = "/home/hasenj/manga/skipbeat17/"
 
+# system imports
+import os
 import sys
+# Qt imports
 from PyQt4 import QtGui, QtCore
+# Project imports
+import fstrip
 
-class PictureWidget(QtGui.QWidget):
+def load_frames(path):
+    for file in sorted(os.listdir(path)):
+        _, ext = os.path.splitext(file)
+        if ext in ['.png', '.jpg', '.jpeg']:
+            image_path = os.path.join(path, file)
+            print "loading:", image_path
+            yield fstrip.create_frame(image_path)
+
+class MangaWidget(fstrip.FilmStrip):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-        self.image = QtGui.QImage(test_image)
+        fstrip.FilmStrip.__init__(self, parent)
+        self.frames = list(load_frames(test_path))
         self.y = 0
     
-    def paintEvent(self, event):
-        painter = QtGui.QPainter()
-        painter.begin(self)
-        padding = painter.viewport().width() - self.image.rect().width()
-        x = int(padding/2)
-        y = self.y
-        painter.drawImage(QtCore.QPoint(x,y), self.image)
-        painter.end()
-
     def keyPressEvent(self, event):
+        step = 100
         if event.key() == QtCore.Qt.Key_J:
-            self.y -= 10
+            self.y -= step
         if event.key() == QtCore.Qt.Key_K:
-            self.y += 10
+            self.y += step
         if event.key() == QtCore.Qt.Key_Q:
             QtGui.QApplication.instance().quit()
         self.repaint()
@@ -38,7 +43,7 @@ class PictureWidget(QtGui.QWidget):
 
 def main():
     app = QtGui.QApplication(sys.argv)
-    window = PictureWidget()
+    window = MangaWidget()
     window.resize(950, 550)
     window.setWindowTitle("Manga Reader")
     # window.setWindowIcon(QtGui.QIcon('art/icon.png'))
