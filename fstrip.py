@@ -21,8 +21,11 @@ def paint_frame(painter, frame, y):
 def paint_frames(painter, frames, y):
     """Draw a list of frames starting at vertical position `y`"""
     while frames and y < painter.viewport().height():
-        paint_frame(painter, frames[0], y)
-        y += frames[0].rect().height()
+        frame = frames[0]
+        frame_height = frame.rect().height()
+        if y + frame_height > 0: # don't draw something that won't be even visible
+            paint_frame(painter, frame, y)
+        y += frame_height 
         frames = frames[1:]
 
 class FilmStrip(QtGui.QWidget):
