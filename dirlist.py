@@ -2,7 +2,8 @@
     Author: Hasen il Judy
     License GPL v2
 
-    This module provides the functionality for non-blocking directory listing
+    This module provides the functionality for directory fetching, which is used to make
+    the recursive directory listing as non-blocking as possible
 """
 import os
 
@@ -50,5 +51,4 @@ class DirList(object):
                 ["     %s" % entry for entry in self.list])
 
 
-            
 
