@@ -39,7 +39,7 @@ def dir_entry_list(root):
     return [DirEntry(root, name) for name in sorted(os.listdir(root))]
 
 class List(object):
-    def __init__(self, root, parent=None):
+    def __init__(self, root, parent=None, direction=1):
         """
             parent is the list of the parent directory, if any
         """
@@ -47,9 +47,17 @@ class List(object):
         self.root = root
         self.parent = parent
         self.list = dir_entry_list(self.root)
-        self.cursor = 0
+        if direction == FORWARD:
+            self.cursor = 0
+        else:
+            self.cursor = len(self.list) - 1
 
-    def move_cursor(self, direction=1):
+
+    def set_cursor_end(self):
+        #moves cursor to the end of the list
+        self.cursor = len(self.list) - 1
+
+    def move_cursor(self, direction):
         if direction not in (1,-1):
             raise Error("bad direction")
         self.cursor += direction
@@ -70,8 +78,8 @@ FORWARD, BACKWARD = 1, -1
 class Fetcher(object):
     def __init__(self, root, direction=FORWARD):
         self.root = root_path(root)
-        self.list = List(self.root)
         self.direction = direction
+        self.list = List(self.root, self.direction)
 
     def next(self):
         if not self.list.inbound():
@@ -80,7 +88,7 @@ class Fetcher(object):
             self.list = self.list.parent
             return self.next() # try again
         if self.list.item().isdir():
-            newlist = List(self.list.item().path, self.list)
+            newlist = List(self.list.item().path, self.list, self.direction)
             self.list.move_cursor(self.direction)
             self.list = newlist
             return self.next() # try again
