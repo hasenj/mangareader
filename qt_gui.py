@@ -21,20 +21,26 @@ def load_frames(path):
         _, ext = os.path.splitext(file)
         if ext in ['.png', '.jpg', '.jpeg']:
             image_path = os.path.join(path, file)
-            yield fstrip.create_frame(image_path, 700)
+            yield fstrip.create_frame(image_path, 800)
 
 class MangaWidget(fstrip.FilmStrip):
     def __init__(self, parent=None):
         fstrip.FilmStrip.__init__(self, parent)
         self.frames = list(load_frames(test_path))
         self.y = 0
+        self.step = 100
+
+    def scrollDown(self):
+        self.y -= self.step
     
+    def scrollUp(self):
+        self.y += self.step
+
     def keyPressEvent(self, event):
-        step = 100
         if event.key() == QtCore.Qt.Key_J:
-            self.y -= step
+            self.scrollDown()
         if event.key() == QtCore.Qt.Key_K:
-            self.y += step
+            self.scrollUp()
         if event.key() == QtCore.Qt.Key_Q:
             QtGui.QApplication.instance().quit()
         self.repaint()
@@ -43,7 +49,7 @@ class MangaWidget(fstrip.FilmStrip):
 def main():
     app = QtGui.QApplication(sys.argv)
     window = MangaWidget()
-    window.resize(950, 550)
+    window.resize(950, 850)
     window.setWindowTitle("Manga Reader")
     # window.setWindowIcon(QtGui.QIcon('art/icon.png'))
     window.show()

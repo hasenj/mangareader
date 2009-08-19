@@ -4,7 +4,9 @@
 
     Film strip module.
 
-    A film strip is an "infinite" list of images that can be scrolled up and down.
+    A film strip is a widget that displays images vertically
+    
+    A manga strip is an "infinite" list of images that can be scrolled up and down.
 """
 
 from PyQt4 import QtGui, QtCore
