@@ -9,14 +9,6 @@ import os
 
 # ------ some primitives ----------------
 
-def stack_top(stack):
-    """Get the top (last item) of the stack """
-    return stack[-1]
-
-def stack_pop(stack):
-    """Remove the top (last) item from the list/stack"""
-    return stack[:-1]
-
 class DirEntry(object):
     def __init__(self, root, name):
         self.root = root
@@ -98,6 +90,7 @@ class Fetcher(object):
         # happy case
         ret = self.list.item().path
         self.list.move_cursor(self.direction)
+        self.last = ret # remember ..
         return ret
 
 def create_fetcher(root, start, direction=FORWARD):
@@ -114,6 +107,17 @@ def create_fetcher(root, start, direction=FORWARD):
         else:
             fetcher.list.cursor = file_index
     return fetcher
+
+from time import time as now
+
+def fetch_items(fetcher, count, time):
+    """Fetch {{count}} items from fetcher, but stop if you're taking more than {{time}} seconds"""
+    start = now()
+    result = []
+    while len(result) < count and now() - start < time:
+        try: result.append(fetcher.next())
+        except StopIteration: break
+    return result
 
 ### debug stuff
 class _GetchUnix:
