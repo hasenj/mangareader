@@ -39,7 +39,7 @@ def dir_entry_list(root):
     return [DirEntry(root, name) for name in sorted(os.listdir(root))]
 
 class List(object):
-    def __init__(self, root, parent=None, direction=1):
+    def __init__(self, root, parent, direction):
         """
             parent is the list of the parent directory, if any
         """
@@ -79,12 +79,15 @@ class Fetcher(object):
     def __init__(self, root, direction=FORWARD):
         self.root = root_path(root)
         self.direction = direction
-        self.list = List(self.root, self.direction)
+        self.list = List(self.root, None, self.direction)
+
+    def __iter__(self):
+        return self
 
     def next(self):
         if not self.list.inbound():
             if not self.list.parent:
-                return None
+                raise StopIteration
             self.list = self.list.parent
             return self.next() # try again
         if self.list.item().isdir():
@@ -97,5 +100,44 @@ class Fetcher(object):
         self.list.move_cursor(self.direction)
         return ret
 
+def create_fetcher(root, start, direction=FORWARD):
+    start = os.path.relpath(start, root)
+    fetcher = Fetcher(root, direction)
+    start = start.replace('\\', '/')
+    for part in start.split('/'):
+        part_path = os.path.join(fetcher.list.root, part)
+        # figure out how to set the cursor
+        file_index = sorted(os.listdir(fetcher.list.root)).index(part) 
+        if os.path.isdir(part_path):
+            fetcher.list.cursor = file_index + direction
+            fetcher.list = List(part_path, fetcher.list, direction)
+        else:
+            fetcher.list.cursor = file_index
+    return fetcher
+
+### debug stuff
+class _GetchUnix:
+    def __init__(self):
+        import tty, sys
+
+    def __call__(self):
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
 
 
+getch = _GetchUnix()
+    
+
+def step(fetcher):
+    while True:
+        print fetcher.next()
+        c = getch()
+        if c == 'q':
+            break
