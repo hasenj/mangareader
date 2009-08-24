@@ -6,7 +6,7 @@
 """
 
 test_image = "/home/hasenj/manga/skipbeat17/01.png"
-test_path = "/home/hasenj/manga/skipbeat17/"
+test_path = "/home/hasenj/manga/sample/"
 
 # system imports
 import os
@@ -15,6 +15,7 @@ import sys
 from PyQt4 import QtGui, QtCore
 # Project imports
 import fstrip
+import mscroll
 
 def load_frames(path):
     for file in sorted(os.listdir(path)):
@@ -23,18 +24,17 @@ def load_frames(path):
             image_path = os.path.join(path, file)
             yield fstrip.create_frame(image_path, 800)
 
-class MangaWidget(fstrip.FilmStrip):
+class MangaWidget(QtGui.QWidget):
     def __init__(self, parent=None):
-        fstrip.FilmStrip.__init__(self, parent)
-        self.frames = list(load_frames(test_path))
-        self.y = 0
+        QtGui.QWidget.__init__(self, parent)
+        self.scroller = mscroll.MangaScroller(test_path)
         self.step = 100
 
     def scrollDown(self):
-        self.y -= self.step
+        self.scroller.scroll_down(self.step)
     
     def scrollUp(self):
-        self.y += self.step
+        self.scroller.scroll_up(self.step)
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_J:
@@ -44,6 +44,12 @@ class MangaWidget(fstrip.FilmStrip):
         if event.key() == QtCore.Qt.Key_Q:
             QtGui.QApplication.instance().quit()
         self.repaint()
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter()
+        painter.begin(self)
+        mscroll.paint_scroller(painter, self.scroller)
+        painter.end()
 
 
 def main():

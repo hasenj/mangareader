@@ -72,6 +72,7 @@ class Fetcher(object):
         self.root = root_path(root)
         self.direction = direction
         self.list = List(self.root, None, self.direction)
+        self.last = None
 
     def __iter__(self):
         return self
