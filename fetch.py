@@ -44,11 +44,6 @@ class List(object):
         else:
             self.cursor = len(self.list) - 1
 
-
-    def set_cursor_end(self):
-        #moves cursor to the end of the list
-        self.cursor = len(self.list) - 1
-
     def move_cursor(self, direction):
         if direction not in (1,-1):
             raise Error("bad direction")
@@ -105,8 +100,9 @@ def create_fetcher(root, start, direction=FORWARD):
         if os.path.isdir(part_path):
             fetcher.list.cursor = file_index + direction
             fetcher.list = List(part_path, fetcher.list, direction)
-        else:
+        else: # file, must be last thing, so we assume there's a "break" at the end of this else clause, but won't put it
             fetcher.list.cursor = file_index
+            fetcher.next() #if we're at a file, it's likely we want the next file, not this one
     return fetcher
 
 from time import time as now
@@ -115,7 +111,7 @@ def fetch_items(fetcher, count, time):
     """Fetch {{count}} items from fetcher, but stop if you're taking more than {{time}} seconds"""
     start = now()
     result = []
-    while len(result) < count and now() - start < time:
+    while len(result) < count and (now() - start) < time:
         try: result.append(fetcher.next())
         except StopIteration: break
     return result

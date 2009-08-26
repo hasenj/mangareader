@@ -30,7 +30,7 @@ class Page(object):
 class MangaScroller(object):
     def __init__(self, root):
         self.fetcher = fetch.Fetcher(root)
-        self.pages = [Page(i) for i in fetch.fetch_items(self.fetcher, 20, 0.1)]
+        self.pages = [Page(i) for i in fetch.fetch_items(self.fetcher, 2, 0.1)]
         if len(self.pages) == 0:
             raise EmptyMangaError
         self.cursor_page = self.pages[0]
@@ -47,13 +47,17 @@ class MangaScroller(object):
 
     def move_cursor(self, amount):
         # amount is in pixels
+        current_index = self.pages.index(self.cursor_page)
         self.cursor_pixel += amount
+        if amount > 0 and (len(self.pages) - current_index) < 2: #we're getting close to the end and moving forward
+            self.fetch_more(fetch.FORWARD)
+        if amount < 0 and current_index < 2: #we're moving backward and getting close the beginning
+            self.fetch_more(fetch.BACKWARD)
+            # this changes current index, so re-calculate it
+            current_index = self.pages.index(self.cursor_page)
         if self.cursor_pixel > self.cursor_page.height():
             # move to next page
-            next_index = self.pages.index(self.cursor_page)+1
-            if len(self.pages) <= next_index:
-                # we're at last page, try to fetch more then try again
-                self.fetch_more(fetch.FORWARD)
+            next_index = current_index + 1
             if len(self.pages) > next_index:
                 # happy case: move cursor page and adjust pixel offset
                 prev_height = self.cursor_page.height()
@@ -61,12 +65,8 @@ class MangaScroller(object):
                 self.cursor_pixel -= prev_height
         if self.cursor_pixel < 0:
             # we're jumping up to previous page
-            prev_index = self.pages.index(self.cursor_page)-1
-            if prev_index < 0:
-                #we're at the top, see if we can fetch more from before then try again
-                self.fetch_more(fetch.BACKWARD)
-                prev_index = self.pages.index(self.cursor_page)-1
-            if prev_index >= 0:
+            prev_index = current_index - 1
+            if prev_index >= 0: #make sure we're not at the first page .. since it has no previous
                 # happy case: move cursor page and adjust pixel offset
                 self.cursor_page = self.pages[prev_index]
                 self.cursor_pixel += self.cursor_page.height()
@@ -77,7 +77,7 @@ class MangaScroller(object):
             print "no pages, not sure how to fetch" # DEBUG
             return
         if direction not in (1,-1):
-            raise Error("invalid direction")
+            raise FetchError("invalid direction")
         if direction == fetch.FORWARD:
             last = self.pages[-1].path
         else:
@@ -88,19 +88,16 @@ class MangaScroller(object):
         # fetch from next
         if direction == fetch.FORWARD:
             # add pages to the end
-            fetch_result = [Page(i) for i in fetch.fetch_items(self.fetcher, 20, 0.1)]
-            if len(self.pages) > 5:
-                self.pages = self.pages[-4:]
-            self.pages += fetch_result
+            fetch_result = [Page(i) for i in fetch.fetch_items(self.fetcher, 5, 0.1)]
+            self.pages = self.pages[-4:] + fetch_result
         else:
             # add pages to beginning, in reverse
             fetch_result = [Page(i) for i in fetch.fetch_items(self.fetcher, 5, 0.1)][::-1]
-            if len(self.pages) > 20:
-                self.page = self.pages[:15]
-            self.pages = fetch_result + self.pages
-            # TODO adjust cursor? well we don't have the cursor yet!!
+            self.pages = fetch_result + self.pages[:4]
+            # TODO adjust index cursor? well we don't have the index cursor yet!!
 
 class EmptyMangaError(Exception): pass
+class FetchError(Exception): pass
 
 def paint_scroller(painter, scroller, count=3):
     index = scroller.cursor_index()
