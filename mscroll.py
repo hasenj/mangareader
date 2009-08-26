@@ -3,8 +3,8 @@
     License: GPL v2
 
     Manager for scrolling manga. The idea is that the scroller doesn't see the entire directory tree,
-    only a small window of it, and has to constantly acquire next/previous pages (images) as user 
-    scrolls down or up
+    only a small window of it, and has to constantly acquire (fetch) next/previous pages (images) as 
+    the user scrolls down or up
 """    
 
 import fstrip

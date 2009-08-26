@@ -132,13 +132,12 @@ class _GetchUnix:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
 
-
 getch = _GetchUnix()
     
-
 def step(fetcher):
     while True:
         print fetcher.next()
         c = getch()
         if c == 'q':
             break
+

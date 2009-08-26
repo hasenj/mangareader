@@ -30,19 +30,23 @@ class MangaWidget(QtGui.QWidget):
         self.scroller = mscroll.MangaScroller(test_path)
         self.step = 100
 
-    def scrollDown(self):
-        self.scroller.scroll_down(self.step)
+    def scrollDown(self, step):
+        self.scroller.scroll_down(step)
     
-    def scrollUp(self):
-        self.scroller.scroll_up(self.step)
+    def scrollUp(self, step):
+        self.scroller.scroll_up(step)
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_J:
-            self.scrollDown()
+            self.scrollDown(self.step)
         if event.key() == QtCore.Qt.Key_K:
-            self.scrollUp()
+            self.scrollUp(self.step)
         if event.key() == QtCore.Qt.Key_Q:
             QtGui.QApplication.instance().quit()
+        self.repaint()
+
+    def wheelEvent(self, event):
+        self.scroller.move_cursor(-event.delta())
         self.repaint()
 
     def paintEvent(self, event):
