@@ -24,7 +24,7 @@ def load_frames(path):
             image_path = os.path.join(path, file)
             yield fstrip.create_frame(image_path, 800)
 
-class MangaWidget(QtGui.QWidget):
+class MainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.scroller = mscroll.MangaScroller(test_path)
@@ -66,7 +66,7 @@ class MangaWidget(QtGui.QWidget):
 
 def main():
     app = QtGui.QApplication(sys.argv)
-    window = MangaWidget()
+    window = MainWindow()
     window.resize(1000, 800)
     window.setWindowTitle("Manga Reader")
     # window.setWindowIcon(QtGui.QIcon('art/icon.png'))
