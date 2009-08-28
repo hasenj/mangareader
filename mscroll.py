@@ -30,7 +30,7 @@ class Page(object):
 class MangaScroller(object):
     def __init__(self, root):
         self.fetcher = fetch.Fetcher(root)
-        self.pages = [Page(i) for i in fetch.fetch_items(self.fetcher, 2, 0.1)]
+        self.pages = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)]
         if len(self.pages) == 0:
             raise EmptyMangaError
         self.cursor_page = self.pages[0]
@@ -88,11 +88,11 @@ class MangaScroller(object):
         # fetch from next
         if direction == fetch.FORWARD:
             # add pages to the end
-            fetch_result = [Page(i) for i in fetch.fetch_items(self.fetcher, 5, 0.1)]
+            fetch_result = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)]
             self.pages = self.pages[-4:] + fetch_result
         else:
             # add pages to beginning, in reverse
-            fetch_result = [Page(i) for i in fetch.fetch_items(self.fetcher, 5, 0.1)][::-1]
+            fetch_result = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)][::-1]
             self.pages = fetch_result + self.pages[:4]
             # TODO adjust index cursor? well we don't have the index cursor yet!!
 

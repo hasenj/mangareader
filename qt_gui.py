@@ -29,6 +29,7 @@ class MangaWidget(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         self.scroller = mscroll.MangaScroller(test_path)
         self.step = 100
+        self.big_step = 600
 
     def scrollDown(self, step):
         self.scroller.scroll_down(step)
@@ -37,12 +38,19 @@ class MangaWidget(QtGui.QWidget):
         self.scroller.scroll_up(step)
 
     def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_J:
+        key = event.text()
+        if key == 'j':
             self.scrollDown(self.step)
-        if event.key() == QtCore.Qt.Key_K:
+        if key == 'k':
             self.scrollUp(self.step)
-        if event.key() == QtCore.Qt.Key_Q:
+        if key == 'J':
+            self.scrollDown(self.big_step)
+        if key == 'K':
+            self.scrollUp(self.big_step)
+        if key == 'q':
             QtGui.QApplication.instance().quit()
+        if key == ':':
+            print "cmdbar TODO"
         self.repaint()
 
     def wheelEvent(self, event):
@@ -59,7 +67,7 @@ class MangaWidget(QtGui.QWidget):
 def main():
     app = QtGui.QApplication(sys.argv)
     window = MangaWidget()
-    window.resize(950, 850)
+    window.resize(1000, 800)
     window.setWindowTitle("Manga Reader")
     # window.setWindowIcon(QtGui.QIcon('art/icon.png'))
     window.show()
