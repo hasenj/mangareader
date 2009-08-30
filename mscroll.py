@@ -36,6 +36,12 @@ class MangaScroller(object):
         self.cursor_page = self.pages[0]
         self.cursor_pixel = 0
 
+    def change_chapter(self, path):
+        self.fetcher = fetch.create_fetcher(self.fetcher.root, path)
+        self.pages = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)]
+        self.cursor_page = self.pages[0]
+        self.cursor_pixel = 0
+
     def cursor_index(self):
         return self.pages.index(self.cursor_page)
 

@@ -26,10 +26,36 @@ def load_frames(path):
 
 class MainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
+        QtGui.QMainWindow.__init__(self, parent)
         self.scroller = mscroll.MangaScroller(test_path)
         self.step = 100
         self.big_step = 600
+
+        open = QtGui.QAction(QtGui.QIcon("art/open.png"), "Open Manga", self)
+        open.setShortcut('Ctrl+O')
+        open.setStatusTip('Choose a manga to read')
+        self.connect(open, QtCore.SIGNAL('triggered()'), self.choose_manga)
+
+        # toolbar = self.addToolBar('Manga')
+        # toolbar.addAction(open)
+        # toolbar.hide()
+
+    def change_manga(self, path):
+        # TODO managa a repo of mangas or something so that when we go back 
+        # to another previous manga, we also restore the scroller object
+        # or at least restore where the user was
+        self.scroller = mscroll.MangaScroller(path)
+        self.repaint()
+
+    def choose_manga(self):
+        dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Manga", os.path.join(self.scroller.fetcher.root, '..'))
+        if not dir: return
+        self.change_manga(unicode(dir))
+
+    def choose_chapter(self):
+        dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Chapter", self.scroller.fetcher.root)
+        if not dir: return
+        self.scroller.change_chapter(unicode(dir))
 
     def scrollDown(self, step):
         self.scroller.scroll_down(step)
@@ -49,6 +75,10 @@ class MainWindow(QtGui.QMainWindow):
             self.scrollUp(self.big_step)
         if key == 'q':
             QtGui.QApplication.instance().quit()
+        if key == 'o':
+            self.choose_manga()
+        if key == 'i':
+            self.choose_chapter()
         if key == ':':
             print "cmdbar TODO"
         self.repaint()

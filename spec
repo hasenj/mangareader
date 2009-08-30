@@ -23,10 +23,10 @@ Minimum Requirements:
     * Read (and display) images recursively from a manga directory. [done]
         * Must be lazy; don't read entire directory tree at once. [done]
     * Scroll up/down using k/j keys and mouse wheel. [done]
-    * Open a command bar when user hits : key.
-    * Jump to a certain chapter, or volume/chapter, by number. 
+    * Jump to a certain chapter, or volume/chapter.
 
 Medium Level Requirements:    
+    * Open a command bar when user hits : key.
     * Set width (of film strip) using percentage or pixel values. Also provide a GUI slider for it.
     * Save/load manga information, such as manga folder and where the user was last time.
     * Implement bookmarks: allow the user to bookmark a location and jump to it later.

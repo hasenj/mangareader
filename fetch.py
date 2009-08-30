@@ -96,7 +96,8 @@ def create_fetcher(root, start, direction=FORWARD):
     for part in start.split('/'):
         part_path = os.path.join(fetcher.list.root, part)
         # figure out how to set the cursor
-        file_index = sorted(os.listdir(fetcher.list.root)).index(part) 
+        try: file_index = sorted(os.listdir(fetcher.list.root)).index(part) 
+        except: raise NotSubdirectoryError("%s is not a subdirectory of %s"%(root, start))
         if os.path.isdir(part_path):
             fetcher.list.cursor = file_index + direction
             fetcher.list = List(part_path, fetcher.list, direction)
@@ -115,6 +116,8 @@ def fetch_items(fetcher, count, time):
         try: result.append(fetcher.next())
         except StopIteration: break
     return result
+
+class NotSubdirectoryError(Exception): pass
 
 ### debug stuff
 class _GetchUnix:
