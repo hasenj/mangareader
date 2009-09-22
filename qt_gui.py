@@ -1,12 +1,10 @@
 """
-    Author: Hasen il Judy
+    Author: Hasen "hasenj" il Judy
     License: GPL v2
 
     Qt based graphical user interface for the manga reader
 """
 
-test_image = "/home/hasenj/manga/skipbeat17/01.png"
-test_path = "/home/hasenj/manga/sample/"
 
 # system imports
 import os
@@ -16,6 +14,12 @@ from PyQt4 import QtGui, QtCore
 # Project imports
 import fstrip
 import mscroll
+
+if os.name == 'posix':
+    test_image = "/home/hasenj/manga/skipbeat17/01.png"
+    test_path = "/home/hasenj/manga/sample/"
+elif os.name == 'nt':
+    test_path = "C:\manga\sample\\"
 
 def load_frames(path):
     for file in sorted(os.listdir(path)):

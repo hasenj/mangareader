@@ -1,6 +1,6 @@
 """
-    Author: Hasen il Judy
-    License GPL v2
+    Author: Hasen "hasenj" il Judy
+    License: GPL v2
 
     This module provides the functionality for directory fetching, which is used to make
     the recursive directory listing as non-blocking as possible
@@ -120,27 +120,28 @@ def fetch_items(fetcher, count, time):
 class NotSubdirectoryError(Exception): pass
 
 ### debug stuff
-class _GetchUnix:
-    def __init__(self):
-        import tty, sys
+if os.name == 'posix':                                       
+    class _GetchUnix:
+        def __init__(self):
+            import tty, sys
 
-    def __call__(self):
-        import sys, tty, termios
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
+        def __call__(self):
+            import sys, tty, termios
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            try:
+                tty.setraw(sys.stdin.fileno())
+                ch = sys.stdin.read(1)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            return ch
 
-getch = _GetchUnix()
-    
-def step(fetcher):
-    while True:
-        print fetcher.next()
-        c = getch()
-        if c == 'q':
-            break
+    getch = _GetchUnix()
+        
+    def step(fetcher):
+        while True:
+            print fetcher.next()
+            c = getch()
+            if c == 'q':
+                break
 

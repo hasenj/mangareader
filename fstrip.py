@@ -1,5 +1,5 @@
 """
-    Author: Hasen il Judy
+    Author: Hasen "hasenj" il Judy
     License: GPL v2
 
     Film strip module.

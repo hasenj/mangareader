@@ -1,5 +1,5 @@
 """
-    Author: Hasen il Judy
+    Author: Hasen "hasenj" il Judy
     License: GPL v2
 
     Manager for scrolling manga. The idea is that the scroller doesn't see the entire directory tree,
