@@ -9,23 +9,30 @@
 
 import fstrip
 import fetch
+from PyQt4 import QtGui, QtCore
 
 class Page(object):
     def __init__(self, path):
         self.path = path
         self.loaded = False
         self.frame = None
-    def load(self, width=None):
-        self.frame = fstrip.create_frame(self.path, width)
+        self.scaled = {}
+    def load(self):
+        self.frame = fstrip.create_frame(self.path)
         self.loaded = True
     def height(self):
         if not self.loaded:
             self.load()
         return self.frame.rect().height()
-    def get_frame(self):
+    def get_frame(self, width=None):
         if not self.loaded:
             self.load()
-        return self.frame
+        if width is None:
+            return self.frame
+        if not width in self.scaled:
+            self.scaled[width] = self.frame.scaledToWidth(width, QtCore.Qt.SmoothTransformation)
+        return self.scaled[width]
+
 
 class MangaScroller(object):
     def __init__(self, root):
@@ -108,6 +115,7 @@ class FetchError(Exception): pass
 def paint_scroller(painter, scroller, count=3):
     index = scroller.cursor_index()
     pages = scroller.pages[index:index+count]
+    # width = painter.viewport().width() * 0.7 # XXX unstable
     frames = [p.get_frame() for p in pages]
     y = -scroller.cursor_pixel
     fstrip.paint_frames(painter, frames, y)
