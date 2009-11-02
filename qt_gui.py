@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """
     Author: Hasen "hasenj" il Judy
     License: GPL v2
@@ -12,11 +13,11 @@ import sys
 # Qt imports
 from PyQt4 import QtGui, QtCore
 # Project imports
+sys.path = [os.path.realpath( os.path.join( os.path.dirname(__file__), ".." ) )] + sys.path
 import fstrip
 import mscroll
 
 if os.name == 'posix':
-    test_image = "/home/hasenj/manga/skipbeat17/01.png"
     test_path = "/home/hasenj/manga/sample/"
 elif os.name == 'nt':
     test_path = "C:\manga\sample\\"
@@ -29,9 +30,9 @@ def load_frames(path):
             yield fstrip.create_frame(image_path, 800)
 
 class MainWindow(QtGui.QMainWindow):
-    def __init__(self, parent=None):
-        QtGui.QMainWindow.__init__(self, parent)
-        self.scroller = mscroll.MangaScroller(test_path)
+    def __init__(self, startdir):
+        QtGui.QMainWindow.__init__(self, None)
+        self.scroller = mscroll.MangaScroller(startdir)
         self.step = 100
         self.big_step = 600
 
@@ -98,9 +99,15 @@ class MainWindow(QtGui.QMainWindow):
         painter.end()
 
 
+import sys
+
 def main():
+    if len(sys.argv) > 1:
+        startdir = sys.argv[1]
+    else:
+        startdir = test_path
     app = QtGui.QApplication(sys.argv)
-    window = MainWindow()
+    window = MainWindow(startdir)
     window.resize(1000, 800)
     window.setWindowTitle("Manga Reader")
     # window.setWindowIcon(QtGui.QIcon('art/icon.png'))
