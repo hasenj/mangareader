@@ -27,6 +27,7 @@ class ThreadQueue(object):
         self.list = []
         self.list_lock = thread.allocate_lock()
         self.thread = thread.start_new_thread(self.run, ())
+        print "BUGBUGBUG: starting new thread!!"
     def push(self, target):
         with self.list_lock:
             self.list.append(target)
@@ -36,7 +37,7 @@ class ThreadQueue(object):
         """
         while True:
             while len(self.list) == 0:
-                time.sleep(0.1) # wait and check back in a while
+                time.sleep(0.2) # number is in seconds
             with self.list_lock:
                 target = self.list.pop(0)
             target()
@@ -59,10 +60,13 @@ def queue_thread_target(target, name):
 class Page(object):
     def __init__(self, path):
         self.path = path
-        self.loaded = False
+        self.loading = 0 # 0 = not loaded; 1 = loading; 2 = loaded
         self.frame = None
         self.scaled = {}
-    def load(self):
+
+    def is_loaded(self): 
+        return self.loading == 2
+    def load(self, max_width=None):
         """
             Load page in the background, if not already loaded.
 
@@ -73,26 +77,27 @@ class Page(object):
 
             We do this so that images are loaded in order, not randomly (or depending on which is faster to load/smaller in size)
 
-            We'll know when the loader is done because it sets `self.loaded = True`
+            We'll know when the loader is done because it sets `self.loading = 2`
         """
-        if self.loaded: return
+        if self.loading > 0: return
         def loader_thread_runner():
-            self.frame = fstrip.create_frame(self.path)
-            self.loaded = True
-        # load image in back ground, keep the order!
+            _frame = fstrip.create_frame(self.path)
+            if max_width and _frame.rect().width() > max_width:
+                _frame = _frame.scaledToWidth(max_width, QtCore.Qt.SmoothTransformation)
+            self.frame = _frame
+            self.loading = 2
+            print "done loading", self.path
+        print "pushing:", self.path
+        self.loading = 1
         queue_thread_target(loader_thread_runner, "image_loader")
     def height(self):
-        if not self.loaded:
+        if not self.is_loaded():
             return 10
         return self.frame.rect().height()
-    def get_frame(self, width=None):
-        if not self.loaded:
+    def get_frame(self):
+        if not self.is_loaded():
             return None
-        if width is None:
-            return self.frame
-        if not width in self.scaled:
-            self.scaled[width] = self.frame.scaledToWidth(width, QtCore.Qt.SmoothTransformation)
-        return self.scaled[width]
+        return self.frame
 
 
 class MangaScroller(object):
@@ -103,6 +108,15 @@ class MangaScroller(object):
             raise EmptyMangaError
         self.cursor_page = self.pages[0]
         self.cursor_pixel = 0
+
+    def loaded_pages_count(self):
+        sum = 0
+        for page in self.pages:
+            if page.is_loaded():
+                sum +=1
+            else:
+                break
+        return sum
 
     def change_chapter(self, path):
         self.fetcher = fetch.create_fetcher(self.fetcher.root, path)
@@ -129,7 +143,7 @@ class MangaScroller(object):
             self.fetch_more(fetch.BACKWARD)
             # this changes current index, so re-calculate it
             current_index = self.pages.index(self.cursor_page)
-        if self.cursor_page.loaded and self.cursor_pixel > self.cursor_page.height():
+        if self.cursor_page.is_loaded() and self.cursor_pixel > self.cursor_page.height():
             # move to next page
             next_index = current_index + 1
             if len(self.pages) > next_index:
@@ -174,11 +188,21 @@ class EmptyMangaError(Exception): pass
 class FetchError(Exception): pass
 
 def paint_scroller(painter, scroller, count=3):
+    """
+        Render scroller using painter
+
+        @return number of frames rendered (so we know if we need to update)
+    """
     index = scroller.cursor_index()
     pages = scroller.pages[index:index+count]
+    # setup loading parameters
+    # TODO: fix, should be viewing parameters? 
+    max_width = painter.viewport().width()
+    size_kw = { 'max_width': max_width }
     for page in pages:
-        page.load() # load page in background, if not already loaded
-    frames = [p.get_frame() for p in pages if p.loaded]
+        page.load(**size_kw) # load page in background, if not already loaded
+    frames = [p.get_frame() for p in pages if p.is_loaded()]
     y = -scroller.cursor_pixel
     fstrip.paint_frames(painter, frames, y)
+    return len(frames) 
 

@@ -35,11 +35,17 @@ class MainWindow(QtGui.QMainWindow):
         self.scroller = mscroll.MangaScroller(startdir)
         self.step = 100
         self.big_step = 600
+        self.update_notice = False
+        self.last_frame_count = 0 # we use this to know to re-render when new pages are loaded!
 
         open = QtGui.QAction(QtGui.QIcon("art/open.png"), "Open Manga", self)
         open.setShortcut('Ctrl+O')
         open.setStatusTip('Choose a manga to read')
         self.connect(open, QtCore.SIGNAL('triggered()'), self.choose_manga)
+
+        self.timer = QtCore.QTimer()
+        self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timerEvent)
+        self.timer.start(800) # number is msec
 
         # toolbar = self.addToolBar('Manga')
         # toolbar.addAction(open)
@@ -95,8 +101,12 @@ class MainWindow(QtGui.QMainWindow):
     def paintEvent(self, event):
         painter = QtGui.QPainter()
         painter.begin(self)
-        mscroll.paint_scroller(painter, self.scroller)
+        self.last_pages_count = mscroll.paint_scroller(painter, self.scroller)
         painter.end()
+
+    def timerEvent(self):
+        if self.scroller.loaded_pages_count() > self.last_pages_count:
+            self.repaint()
 
 
 import sys
