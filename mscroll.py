@@ -17,45 +17,9 @@
 
 import fstrip
 import fetch
+from bgloader import queue_image_loader
 from PyQt4 import QtGui, QtCore
 
-import thread, time
-class ThreadQueue(object):
-    """A thread runner that keeps running various things"""
-    def __init__(self, name):
-        self.name = name
-        self.list = []
-        self.list_lock = thread.allocate_lock()
-        self.thread = thread.start_new_thread(self.run, ())
-        print "BUGBUGBUG: starting new thread!!"
-    def push(self, target):
-        with self.list_lock:
-            self.list.append(target)
-    def run(self):
-        """
-            This function runs in its own thread!
-        """
-        while True:
-            while len(self.list) == 0:
-                time.sleep(0.2) # number is in seconds
-            with self.list_lock:
-                target = self.list.pop(0)
-            target()
-
-threads = {}
-def queue_thread_target(target, name):
-    """
-        Put a function in the queue of a named thread.
-        Right now we only use the image_loader thread, 
-        but it sounds useful to generalize it a bit since it doesn't cost much at all
-
-        @param target: function to run inside thread
-        @param name: the name of the thread 
-    """
-    if not threads.has_key(name):
-        threads[name] = ThreadQueue(name)
-    threads[name].push(target)
-    
 
 class Page(object):
     def __init__(self, path):
@@ -80,16 +44,16 @@ class Page(object):
             We'll know when the loader is done because it sets `self.loading = 2`
         """
         if self.loading > 0: return
-        def loader_thread_runner():
+        def image_loader(): # this will run in a background thread
             _frame = fstrip.create_frame(self.path)
             if max_width and _frame.rect().width() > max_width:
                 _frame = _frame.scaledToWidth(max_width, QtCore.Qt.SmoothTransformation)
             self.frame = _frame
             self.loading = 2
             print "done loading", self.path
-        print "pushing:", self.path
+        print "queueing:", self.path
         self.loading = 1
-        queue_thread_target(loader_thread_runner, "image_loader")
+        queue_image_loader(image_loader)
     def height(self):
         if not self.is_loaded():
             return 10
