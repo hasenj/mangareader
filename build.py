@@ -5,7 +5,7 @@
         py2exe
         git (e.g. msysgit)
         rm (msys, or install msysgit with the option of installing unix tools on the PATH)
-        7z (install 7-zip and make sure 7za.exe is in the PATH)
+        7z (install 7-zip and make sure 7z.exe is in the PATH)
 """
 import os
 
@@ -49,7 +49,7 @@ def do_exe():
         options=dict(
             py2exe=dict(
                 optimize=2, 
-                includes=['sip'],
+                # includes=['sip'],
                 compressed=True, 
                 dist_dir=dest,
                 bundle_files=3
@@ -70,6 +70,6 @@ os.system("rm -rf " + dest)  # clean previous build
 do_exe()                     # call py2exe
 os.system("git checkout-index -a -f --prefix=" + dest + "/src/") # add source code to build directory (because we're gpl)
 
-os.system("7za a " + dest_7z + " " + dest) # create an archive suitable for distribution
+os.system("7z a " + dest_7z + " " + dest) # create an archive suitable for distribution
 os.system("rm -rf build")    # clean intermediate build files
 
