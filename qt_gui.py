@@ -119,7 +119,7 @@ def main():
     window = MainWindow(startdir)
     window.resize(1000, 800)
     window.setWindowTitle("Manga Reader")
-    # window.setWindowIcon(QtGui.QIcon('art/icon.png'))
+    window.setWindowIcon(QtGui.QIcon('art/icon.png'))
     window.show()
     sys.exit(app.exec_())
 
