@@ -13,7 +13,6 @@ import sys
 # Qt imports
 from PyQt4 import QtGui, QtCore
 # Project imports
-sys.path = [os.path.realpath( os.path.join( os.path.dirname(__file__), ".." ) )] + sys.path
 import fstrip
 import mscroll
 

@@ -9,32 +9,6 @@
 """
 import os
 
-# This is used to preserve XP/Vista look and feel
-# Don't ask me why, but without this, it will look ugly
-manifest = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-<assemblyIdentity
-    version="0.64.1.0"
-    processorArchitecture="*"
-    name="Python"
-    type="win32"
-/>
-<description>Python Interpreter</description>
-<dependency>
-    <dependentAssembly>
-        <assemblyIdentity
-            type="win32"
-            name="Microsoft.Windows.Common-Controls"
-            version="6.0.0.0"
-            processorArchitecture="*"
-            publicKeyToken="6595b64144ccf1df"
-            language="*"
-        />
-    </dependentAssembly>
-</dependency>
-</assembly>
-"""
-
 main = 'qt_gui.py'
 dest = 'mangareader'
 version = '0.0.5.x'
@@ -43,18 +17,16 @@ dest_7z = 'mangareader_v%s.7z' % version
 def do_exe():
  setup(
         windows=[dict(
-                script = main, 
-                other_resources = [(24,1,manifest)]
+            script = main, 
                 )], 
         options=dict(
             py2exe=dict(
                 optimize=2, 
-                # includes=['sip'],
+                includes=['sip'],
                 compressed=True, 
                 dist_dir=dest,
-                bundle_files=3
+                bundle_files=1
                 )),
-        # zipfile = None,
         data_files = [ 
             ('art', ['art/icon.png']),
             ],
