@@ -6,7 +6,8 @@ Goal:
 
 Description:
     The program will read a directory that contains a specific manga
-    within it. This manga can be split into multiple directories, so 
+    within it. The manga, being a series of images sorted alphabetically.
+    This manga can be split into multiple directories, so 
     the application must read images in this directory and all its
     subdirectories recursively.
 
@@ -23,12 +24,11 @@ Minimum Requirements:
     * Read (and display) images recursively from a manga directory. [done]
         * Must be lazy; don't read entire directory tree at once. [done]
     * Scroll up/down using k/j keys and mouse wheel. [done]
-    * Jump to a certain chapter, or volume/chapter.
+    * Jump to a certain chapter, or volume/chapter. [wip]
 
 Medium Level Requirements:    
     * Open a command bar when user hits : key.
-    * Set width (of film strip) using percentage or pixel values. Also provide a GUI slider for it.
+    * Set width (of film strip (the space allocated for displaying the manga)) using percentage or pixel values. Also provide a GUI slider for it.
     * Save/load manga information, such as manga folder and where the user was last time.
     * Implement bookmarks: allow the user to bookmark a location and jump to it later.
 
-    
