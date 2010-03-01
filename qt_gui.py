@@ -31,6 +31,7 @@ def load_frames(path):
 class MainWindow(QtGui.QMainWindow):
     def __init__(self, startdir):
         QtGui.QMainWindow.__init__(self, None)
+        self.current_manga_path = startdir
         self.scroller = mscroll.MangaScroller(startdir)
         self.step = 100
         self.big_step = 600
@@ -54,16 +55,17 @@ class MainWindow(QtGui.QMainWindow):
         # TODO managa a repo of mangas or something so that when we go back 
         # to another previous manga, we also restore the scroller object
         # or at least restore where the user was
+        self.current_manga_path = path
         self.scroller = mscroll.MangaScroller(path)
         self.repaint()
 
     def choose_manga(self):
-        dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Manga", os.path.join(self.scroller.fetcher.root, '..'))
+        dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Manga", os.path.join(self.current_manga_path, '..'))
         if not dir: return
         self.change_manga(unicode(dir))
 
     def choose_chapter(self):
-        dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Chapter", self.scroller.fetcher.root)
+        dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Chapter", self.current_manga_path)
         if not dir: return
         self.scroller.change_chapter(unicode(dir))
 
