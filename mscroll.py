@@ -66,6 +66,7 @@ class Page(object):
 
 class MangaScroller(object):
     def __init__(self, root):
+        """ `root` is the manga root directory"""
         self.fetcher = fetch.Fetcher(root)
         self.pages = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)]
         if len(self.pages) == 0:

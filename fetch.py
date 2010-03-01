@@ -11,8 +11,8 @@ import os
 
 class DirEntry(object):
     def __init__(self, root, name):
-        self.root = root
-        self.name = name
+        self.root = root # path of parent directory
+        self.name = name # name of this directory
         self._isdir = None
         self.path = os.path.join(self.root, self.name)
     def isdir(self):
@@ -23,19 +23,20 @@ class DirEntry(object):
         dir = "dir" if self.isdir() else "file"
         return "[%s] %s" % (self.name, dir) 
 
-def root_path(root):
+def real_path(root):
     return os.path.realpath(root)
 
 def dir_entry_list(root):
-    root = root_path(root)
+    root = real_path(root)
     return [DirEntry(root, name) for name in sorted(os.listdir(root))]
 
 class List(object):
+    """ List of items in a directory, with a context of parent directory """
     def __init__(self, root, parent, direction):
         """
             parent is the list of the parent directory, if any
         """
-        root = root_path(root)
+        root = real_path(root)
         self.root = root
         self.parent = parent
         self.list = dir_entry_list(self.root)
@@ -64,7 +65,7 @@ FORWARD, BACKWARD = 1, -1
 
 class Fetcher(object):
     def __init__(self, root, direction=FORWARD):
-        self.root = root_path(root)
+        self.root = real_path(root)
         self.direction = direction
         self.list = List(self.root, None, self.direction)
         self.last = None

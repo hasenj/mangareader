@@ -115,6 +115,8 @@ def main():
         startdir = sys.argv[1]
     else:
         startdir = test_path
+        if not os.path.exists(startdir):
+            startdir = ''
     app = QtGui.QApplication(sys.argv)
     window = MainWindow(startdir)
     window.resize(1000, 800)
