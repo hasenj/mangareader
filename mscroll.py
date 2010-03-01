@@ -125,6 +125,7 @@ class PageList(object):
                 
     def fetch_more(self, direction):
         # prepare fetcher
+        print "fetching .."
         if not self.pages:
             print "no pages, not sure how to fetch" # DEBUG
             return
@@ -153,12 +154,15 @@ class EmptyPageList(object):
     def scroll_up(self, step=0): pass
     def scroll_down(self, step=0): pass
     def move_cursor(self, amount): pass
-    def loaded_pages_count(self): return 0
+    def loaded_pages_count(self): return -1
 
 class MangaScroller(object):
     def __init__(self, root):
-        try: self.page_list = PageList(root)
-        except EmptyMangaError: self.page_list = EmptyPageList()
+        try: 
+            self.page_list = PageList(root)
+        except EmptyMangaError: 
+            print "Warning: empty manga"
+            self.page_list = EmptyPageList()
 
     def change_chapter(self, path):
         self.page_list.change_chapter(path)
@@ -184,9 +188,9 @@ def paint_scroller(painter, scroller, count=3):
 
         @return number of frames rendered (so we know if we need to update)
     """
-    if scroller.loaded_pages_count() == 0: return
-    index = scroller.cursor_index()
-    pages = scroller.pages[index:index+count]
+    if scroller.page_list.loaded_pages_count() < 0: return
+    index = scroller.page_list.cursor_index()
+    pages = scroller.page_list.pages[index:index+count]
     # setup loading parameters
     # TODO: fix, should be viewing parameters? 
     max_width = painter.viewport().width()
@@ -194,7 +198,7 @@ def paint_scroller(painter, scroller, count=3):
     for page in pages:
         page.load(**size_kw) # load page in background, if not already loaded
     frames = [p.get_frame() for p in pages if p.is_loaded()]
-    y = -scroller.cursor_pixel
+    y = -scroller.page_list.cursor_pixel
     fstrip.paint_frames(painter, frames, y)
     return len(frames) 
 
