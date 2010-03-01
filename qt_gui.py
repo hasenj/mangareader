@@ -104,8 +104,9 @@ class MainWindow(QtGui.QMainWindow):
         painter.end()
 
     def timerEvent(self):
-        if self.scroller.loaded_pages_count() > self.last_pages_count:
-            self.repaint()
+        pass
+        # if self.scroller.loaded_pages_count() > self.last_pages_count:
+            # self.repaint()
 
 
 import sys

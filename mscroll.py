@@ -63,10 +63,9 @@ class Page(object):
             return None
         return self.frame
 
-
-class MangaScroller(object):
+class PageList(object):
     def __init__(self, root):
-        """ `root` is the manga root directory"""
+        """ `root` is the manga root directory """
         self.fetcher = fetch.Fetcher(root)
         self.pages = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)]
         if len(self.pages) == 0:
@@ -149,6 +148,33 @@ class MangaScroller(object):
             self.pages = fetch_result + self.pages[:4]
             # TODO adjust index cursor? well we don't have the index cursor yet!!
 
+class EmptyPageList(object):
+    def __init__(self): pass
+    def scroll_up(self, step=0): pass
+    def scroll_down(self, step=0): pass
+    def move_cursor(self, amount): pass
+    def loaded_pages_count(self): return 0
+
+class MangaScroller(object):
+    def __init__(self, root):
+        try: self.page_list = PageList(root)
+        except EmptyMangaError: self.page_list = EmptyPageList()
+
+    def change_chapter(self, path):
+        self.page_list.change_chapter(path)
+
+    def scroll_down(self, step=100):
+        self.page_list.scroll_down(step)
+    
+    def scroll_up(self, step=100):
+        self.page_list.scroll_up(step)
+
+    def move_cursor(self, amount):
+        self.page_list.move_cursor(amount)
+
+    def loaded_pages_count(self):
+        return self.page_list.loaded_pages_count()
+                
 class EmptyMangaError(Exception): pass
 class FetchError(Exception): pass
 
@@ -158,6 +184,7 @@ def paint_scroller(painter, scroller, count=3):
 
         @return number of frames rendered (so we know if we need to update)
     """
+    if scroller.loaded_pages_count() == 0: return
     index = scroller.cursor_index()
     pages = scroller.pages[index:index+count]
     # setup loading parameters
