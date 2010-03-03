@@ -9,103 +9,71 @@ import os
 
 # ------ some primitives ----------------
 
-class DirEntry(object):
-    def __init__(self, root, name):
-        self.root = root # path of parent directory
-        self.name = name # name of this directory
-        self._isdir = None
-        self.path = os.path.join(self.root, self.name)
-    def isdir(self):
-        if self._isdir is None:
-            self._isdir = os.path.isdir(self.path)
-        return self._isdir
-    def __repr__(self):
-        dir = "dir" if self.isdir() else "file"
-        return "[%s] %s" % (self.name, dir) 
-
 def real_path(root):
     return os.path.realpath(root)
 
 def dir_entry_list(root):
     root = real_path(root)
-    return [DirEntry(root, name) for name in sorted(os.listdir(root))]
+    return [DirEntry(os.path.join(root, name))
+            for name in sorted(os.listdir(root))] # TODO consider heuristic sorting
 
-class List(object):
-    """ List of items in a directory, with a context of parent directory """
-    def __init__(self, root, parent, direction):
-        """
-            parent is the list of the parent directory, if any
-        """
-        root = real_path(root)
-        self.root = root
-        self.parent = parent
-        self.list = dir_entry_list(self.root)
-        if direction == FORWARD:
-            self.cursor = 0
-        else:
-            self.cursor = len(self.list) - 1
+class DirEntry(object):
+    def __init__(self, path):
+        path = real_path(path)
+        self.path = path
+        self.name = os.path.basename(path)
+        self._isdir = None
+        self._ls = None
 
-    def move_cursor(self, direction):
-        if direction not in (1,-1):
-            raise Error("bad direction")
-        self.cursor += direction
+    @property
+    def isdir(self): 
+        if self._isdir is None: # lazy, don't hit the disk unless we need to
+            self._isdir = os.path.isdir(self.path)
+        return self._isdir
 
-    def item(self):
-        return self.list[self.cursor]
+    @property
+    def ls(self):
+        if self.isdir and self._ls is None: # lazy, don't hit the disk unless we need to
+            self._ls = dir_entry_list(self.path)
+        return self._ls
 
-    def inbound(self):
-        return self.cursor >= 0 and self.cursor < len(self.list)
+    @property
+    def ls_map(self):
+        if self._ls_map is None: 
+            self._ls_map = dict( ((item.name, index) for index, item in enumerate(self.ls)) )
+        return self._ls_map
+
+    def get_entry_index(self, name):
+        try:
+            return self.ls_map[name]
+        except:
+            raise InvalidEntryName()
+
+    def get_entry(self, name):
+        """Get the entry with the given name"""
+        return ls[get_entry_index(name)]
 
     def __repr__(self):
-        return "\n".join(
-                ["[%s] ---------" % self.root] +
-                ["     %s" % entry for entry in self.list])
+        type = "dir " if self.isdir() else "file"
+        return "[%s] %s" % (type, self.name) 
+
+def get_offset_item(entry, name, offset):
+    """Get an item that's `offset` steps apart from the item with `name` in the DirEntry `entry`"""
+    index = entry.get_entry_index(name)
+    ls = entry.ls
+    if 0 <= index+offset < len(ls):
+        return ls[index+offset]
+    else:
+        return None
+
+# kind of low level functions ..
+def get_next_item(entry, name): return get_offset_item(entry, name, 1)        
+def get_prev_item(entry, name): return get_offset_item(entry, name, -1)        
+
+def get_first_item(entry): if len(entry.ls) return entry.ls[0] else return None
+def get_last_item(entry): if len(entry.ls) return entry.ls[-1] else return None
 
 FORWARD, BACKWARD = 1, -1
-
-class Fetcher(object):
-    def __init__(self, root, direction=FORWARD):
-        self.root = real_path(root)
-        self.direction = direction
-        self.list = List(self.root, None, self.direction)
-        self.last = None
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        if not self.list.inbound():
-            if not self.list.parent:
-                raise StopIteration
-            self.list = self.list.parent
-            return self.next() # try again
-        if self.list.item().isdir():
-            newlist = List(self.list.item().path, self.list, self.direction)
-            self.list.move_cursor(self.direction)
-            self.list = newlist
-            return self.next() # try again
-        # happy case
-        ret = self.list.item().path
-        self.list.move_cursor(self.direction)
-        self.last = ret # remember ..
-        return ret
-
-def create_fetcher(root, start, direction=FORWARD):
-    start = os.path.relpath(start, root)
-    fetcher = Fetcher(root, direction)
-    start = start.replace('\\', '/')
-    for part in start.split('/'):
-        part_path = os.path.join(fetcher.list.root, part)
-        # figure out how to set the cursor
-        try: file_index = sorted(os.listdir(fetcher.list.root)).index(part) 
-        except: raise NotSubdirectoryError("%s is not a subdirectory of %s"%(root, start))
-        if os.path.isdir(part_path):
-            fetcher.list.cursor = file_index + direction
-            fetcher.list = List(part_path, fetcher.list, direction)
-        else: # file, must be last thing, so we assume there's a "break" at the end of this else clause, but won't put it
-            fetcher.list.cursor = file_index
-            fetcher.next() #if we're at a file, it's likely we want the next file, not this one
-    return fetcher
 
 from time import time as now
 
@@ -119,30 +87,39 @@ def fetch_items(fetcher, count, time):
     return result
 
 class NotSubdirectoryError(Exception): pass
+class InvalidEntryName(Exception): pass
 
-### debug stuff
-if os.name == 'posix':                                       
-    class _GetchUnix:
-        def __init__(self):
-            import tty, sys
+# ---------------- iteration instead of fetching ---- (test)
 
-        def __call__(self):
-            import sys, tty, termios
-            fd = sys.stdin.fileno()
-            old_settings = termios.tcgetattr(fd)
-            try:
-                tty.setraw(sys.stdin.fileno())
-                ch = sys.stdin.read(1)
-            finally:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-            return ch
+class DirListIterator(object):
+    """ The iterator can start on a file path and walk through the 
+        directory tree looking for the next or previous file that matches
+        a certain type (images by default).
+    """
+    def __init__(self, root_path):
+        """ @param root_path: the directory we walk inside """
+        self.root_path = real_path(root_path)
+        self.dir_entry = DirEntry(self.root_path)
+        self.cache = {} # maps paths to entries
+    def next_item(self, path):
+        path = rel_path(path, root_path) # normalize to relative path
+        parent, name = os.path.split(path)
+        entry = get_entry(parent) # entry that contains path
 
-    getch = _GetchUnix()
-        
-    def step(fetcher):
-        while True:
-            print fetcher.next()
-            c = getch()
-            if c == 'q':
-                break
+        next = get_next_item(entry, name)
+        while next is None:
+            # TODO
+
+    def get_entry(self, path):
+        """Get the entry for the given path, and use a cache"""
+        if self.cache.has_key(path):
+            return self.cache.get(path)
+        # first time we see this, let's find it and remember it
+        entry = self.dir_entry # the root entry
+        for part in path.split('/'):
+            entry = entry.get_entry(part)
+        self.cache.set(path, entry)
+        return entry
+
+
 
