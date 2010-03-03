@@ -101,14 +101,25 @@ class DirListIterator(object):
         self.root_path = real_path(root_path)
         self.dir_entry = DirEntry(self.root_path)
         self.cache = {} # maps paths to entries
-    def next_item(self, path):
+
+    def _next_item(self, path, get_next_item=get_next_item, get_first_item=get_first_item):
+        """Get the next item after the one given by `path`
+        
+            This is a private function, used to abstract away the differences between getting
+            the next and the previous items
+        """
         path = rel_path(path, root_path) # normalize to relative path
         parent, name = os.path.split(path)
         entry = get_entry(parent) # entry that contains path
 
         next = get_next_item(entry, name)
-        while next is None:
-            # TODO
+        while next is None: # we're on the edge?
+            # TODO (interrupted half way through)
+            parent, name = os.path.split(parent) # try our sibling
+            entry = get_entry(parent)
+            next = get_first_item(entry)
+            
+
 
     def get_entry(self, path):
         """Get the entry for the given path, and use a cache"""
