@@ -52,7 +52,7 @@ class MainWindow(QtGui.QMainWindow):
         # toolbar.hide()
 
     def change_manga(self, path):
-        # TODO managa a repo of mangas or something so that when we go back 
+        # TODO manage a repo of mangas or something so that when we go back 
         # to another previous manga, we also restore the scroller object
         # or at least restore where the user was
         self.current_manga_path = path
