@@ -54,7 +54,7 @@ class DirEntry(object):
         return ls[get_entry_index(name)]
 
     def __repr__(self):
-        type = "dir " if self.isdir() else "file"
+        type = "dir " if self.isdir else "file"
         return "[%s] %s" % (type, self.name) 
 
 def get_offset_item(entry, name, offset):
@@ -70,8 +70,13 @@ def get_offset_item(entry, name, offset):
 def get_next_item(entry, name): return get_offset_item(entry, name, 1)        
 def get_prev_item(entry, name): return get_offset_item(entry, name, -1)        
 
-def get_first_item(entry): if len(entry.ls) return entry.ls[0] else return None
-def get_last_item(entry): if len(entry.ls) return entry.ls[-1] else return None
+def get_first_item(entry): 
+    if len(entry.ls): return entry.ls[0] 
+    else: return None
+
+def get_last_item(entry): 
+    if len(entry.ls): return entry.ls[-1] 
+    else: return None
 
 FORWARD, BACKWARD = 1, -1
 
@@ -102,24 +107,57 @@ class DirListIterator(object):
         self.dir_entry = DirEntry(self.root_path)
         self.cache = {} # maps paths to entries
 
+    def _get_first_item_recursive(self, entry, get_first_item=get_first_item):
+        if not entry.isdir: return entry
+        first = get_first_item(entry)
+        if first is None: return None
+        if first.isdir:
+            return self._get_first_item_recursive(first, get_first_item=get_first_item)
+
+    def first_item(self):
+        return self._get_first_item_recursive(self.dir_entry)
+
+    def last_item(self):
+        return self._get_first_item_recursive(self.dir_entry, get_first_item=get_last_item)
+
+    def next_item(self, path):
+        return self._next_item(path)
+
+    def prev_item(self, path):
+        return self._next_item(path, get_next_item=get_prev_item, get_first_item=get_last_item)
+
     def _next_item(self, path, get_next_item=get_next_item, get_first_item=get_first_item):
         """Get the next item after the one given by `path`
         
             This is a private function, used to abstract away the differences between getting
             the next and the previous items
+
+            @returns: the DirEntry for the item (we probably just want the path from it)
         """
+        def get_most_next_item(entry):
+            """ My algorithm to walk the tree starting from the DirEntry `entry`
+                and get the first non-directory entry
+            """
+            while True:
+                if entry is not None:
+                    # This should work whether entry is a dir or a file
+                    result = self._get_first_item_recursive(entry, get_first_item=get_first_item) 
+                    if result is not None:
+                        return result
+                    path = entry.path
+                    parent, name = os.path.split(path) # go up a level and try our sibling
+                    entry = self.get_entry(parent)
+                    entry = get_next_item(entry, name) # parent's sibling
+                if entry is None:
+                    if parent in ('', '/'): # we're at the very end, nothing more!!
+                        return None
+                    parent, name = os.path.split(path) # this level is done, go up
+                    entry = get_next_item(self.get_entry(parent), name)
+                
         path = rel_path(path, root_path) # normalize to relative path
         parent, name = os.path.split(path)
-        entry = get_entry(parent) # entry that contains path
-
-        next = get_next_item(entry, name)
-        while next is None: # we're on the edge?
-            # TODO (interrupted half way through)
-            parent, name = os.path.split(parent) # try our sibling
-            entry = get_entry(parent)
-            next = get_first_item(entry)
-            
-
+        entry = get_next_item(self.get_entry(parent), name)
+        return get_most_next_item(entry)
 
     def get_entry(self, path):
         """Get the entry for the given path, and use a cache"""
@@ -133,4 +171,32 @@ class DirListIterator(object):
         return entry
 
 
+### debug stuff
+if os.name == 'posix':                                       
+    class _GetchUnix:
+        def __init__(self):
+            import tty, sys
+
+        def __call__(self):
+            import sys, tty, termios
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            try:
+                tty.setraw(sys.stdin.fileno())
+                ch = sys.stdin.read(1)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            return ch
+
+    getch = _GetchUnix()
+        
+    def step_test(iterator):
+        item = iterator.first_item()
+        while True:
+            c = getch()
+            if c == 'q':
+                break
+            if item is None: continue
+            if c == 'j': item = iterator.next_item(item)
+            if c == 'k': item = iterator.prev_item(item)
 
