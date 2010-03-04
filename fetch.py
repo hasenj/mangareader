@@ -24,6 +24,7 @@ class DirEntry(object):
         self.name = os.path.basename(path)
         self._isdir = None
         self._ls = None
+        self._ls_map = None
 
     @property
     def isdir(self): 
@@ -47,7 +48,8 @@ class DirEntry(object):
         try:
             return self.ls_map[name]
         except:
-            raise InvalidEntryName()
+            print self.ls_map
+            raise InvalidEntryName(self, name)
 
     def get_entry(self, name):
         """Get the entry with the given name"""
@@ -92,7 +94,10 @@ def fetch_items(fetcher, count, time):
     return result
 
 class NotSubdirectoryError(Exception): pass
-class InvalidEntryName(Exception): pass
+
+class InvalidEntryName(Exception):
+    def __init__(self, entry, name):
+        print "asked for %s from %s" % (name, entry.ls)
 
 # ---------------- iteration instead of fetching ---- (test)
 
@@ -153,7 +158,7 @@ class DirListIterator(object):
                     parent, name = os.path.split(path) # this level is done, go up
                     entry = get_next_item(self.get_entry(parent), name)
                 
-        # path = os.path.relpath(path, self.root_path) # normalize to relative path
+        path = os.path.relpath(path, self.root_path) # normalize to relative path
         parent, name = os.path.split(path)
         entry = get_next_item(self.get_entry(parent), name)
         return get_most_next_item(entry)
@@ -164,10 +169,17 @@ class DirListIterator(object):
             return self.cache.get(path)
         # first time we see this, let's find it and remember it
         entry = self.dir_entry # the root entry
-        for part in path.split('/'):
+        for part in path_parts(path):
             entry = entry.get_entry(part)
-        self.cache.set(path, entry)
+        self.cache[path] = entry
         return entry
+
+def path_parts(path):
+    path.replace('\\', '/')
+    parts = path.split('/')
+    if parts[0] == '': parts = parts[1:]
+    if parts[-1] == '': parts = parts[:-1]
+    return parts
 
 
 ### debug stuff
@@ -200,3 +212,7 @@ if os.name == 'posix':
             if c == 'j': item = iterator.next_item(item.path)
             if c == 'k': item = iterator.prev_item(item.path)
 
+debug = True
+if debug and __name__ == '__main__':
+    it = DirListIterator('/home/hasenj/manga/sample')
+    step_test(it)
