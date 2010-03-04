@@ -142,26 +142,26 @@ class DirListIterator(object):
             """ My algorithm to walk the tree starting from the DirEntry `entry`
                 and get the first non-directory entry
             """
-            while True:
-                if entry is not None:
-                    # This should work whether entry is a dir or a file
-                    result = self._get_first_item_recursive(entry, get_first_item=get_first_item) 
-                    if result is not None:
-                        return result
-                    path = entry.path
-                    parent, name = os.path.split(path) # go up a level and try our sibling
-                    entry = self.get_entry(parent)
-                    entry = get_next_item(entry, name) # parent's sibling
-                if entry is None:
-                    if parent in ('', '/'): # we're at the very end, nothing more!!
-                        return None
-                    parent, name = os.path.split(path) # this level is done, go up
-                    entry = get_next_item(self.get_entry(parent), name)
                 
         path = os.path.relpath(path, self.root_path) # normalize to relative path
         parent, name = os.path.split(path)
         entry = get_next_item(self.get_entry(parent), name)
-        return get_most_next_item(entry)
+
+        while True:
+            if entry is not None:
+                # This should work whether entry is a dir or a file
+                result = self._get_first_item_recursive(entry, get_first_item=get_first_item) 
+                if result is not None:
+                    return result
+                path = entry.path
+                parent, name = os.path.split(path) # go up a level and try our sibling
+                entry = self.get_entry(parent)
+                entry = get_next_item(entry, name) # parent's sibling
+            if entry is None:
+                if parent in ('', '/'): # we're at the very end, nothing more!!
+                    return None
+                parent, name = os.path.split(parent) # this level is done, go up
+                entry = get_next_item(self.get_entry(parent), name)
 
     def get_entry(self, path):
         """Get the entry for the given path, and use a cache"""
@@ -177,8 +177,8 @@ class DirListIterator(object):
 def path_parts(path):
     path.replace('\\', '/')
     parts = path.split('/')
-    if parts[0] == '': parts = parts[1:]
-    if parts[-1] == '': parts = parts[:-1]
+    if parts and parts[0] == '': parts = parts[1:]
+    if parts and parts[-1] == '': parts = parts[:-1]
     return parts
 
 
@@ -204,7 +204,7 @@ if os.name == 'posix':
     def step_test(iterator):
         item = iterator.first_item()
         while True:
-            print item
+            print item.path
             c = getch()
             if c == 'q':
                 break
