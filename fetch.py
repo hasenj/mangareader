@@ -51,7 +51,7 @@ class DirEntry(object):
 
     def get_entry(self, name):
         """Get the entry with the given name"""
-        return ls[get_entry_index(name)]
+        return self.ls[self.get_entry_index(name)]
 
     def __repr__(self):
         type = "dir " if self.isdir else "file"
@@ -111,8 +111,7 @@ class DirListIterator(object):
         if not entry.isdir: return entry
         first = get_first_item(entry)
         if first is None: return None
-        if first.isdir:
-            return self._get_first_item_recursive(first, get_first_item=get_first_item)
+        return self._get_first_item_recursive(first, get_first_item=get_first_item)
 
     def first_item(self):
         return self._get_first_item_recursive(self.dir_entry)
@@ -154,7 +153,7 @@ class DirListIterator(object):
                     parent, name = os.path.split(path) # this level is done, go up
                     entry = get_next_item(self.get_entry(parent), name)
                 
-        path = rel_path(path, root_path) # normalize to relative path
+        # path = os.path.relpath(path, self.root_path) # normalize to relative path
         parent, name = os.path.split(path)
         entry = get_next_item(self.get_entry(parent), name)
         return get_most_next_item(entry)
@@ -193,10 +192,11 @@ if os.name == 'posix':
     def step_test(iterator):
         item = iterator.first_item()
         while True:
+            print item
             c = getch()
             if c == 'q':
                 break
             if item is None: continue
-            if c == 'j': item = iterator.next_item(item)
-            if c == 'k': item = iterator.prev_item(item)
+            if c == 'j': item = iterator.next_item(item.path)
+            if c == 'k': item = iterator.prev_item(item.path)
 
