@@ -124,11 +124,21 @@ class DirListIterator(object):
     def last_item(self):
         return self._get_first_item_recursive(self.dir_entry, get_first_item=get_last_item)
 
+    def first_item_in(self, path):
+        print "getting first in ", path
+        return self._get_first_item_recursive(self.get_entry(self.relpath(path)))
+
+    def first_last_in(self, path):
+        return self._get_first_item_recursive(self.get_entry(self.relpath(path)), get_first_item=get_last_item)
+
     def next_item(self, path):
         return self._next_item(path)
 
     def prev_item(self, path):
         return self._next_item(path, get_next_item=get_prev_item, get_first_item=get_last_item)
+
+    def relpath(self, path):
+        return os.path.relpath(path, self.root_path)
 
     def _next_item(self, path, get_next_item=get_next_item, get_first_item=get_first_item):
         """Get the next item after the one given by `path`
@@ -142,9 +152,7 @@ class DirListIterator(object):
             """ My algorithm to walk the tree starting from the DirEntry `entry`
                 and get the first non-directory entry
             """
-        def relpath(path):
-            return os.path.relpath(path, self.root_path)
-        path = relpath(path) # normalize to relative path
+        path = self.relpath(path) # normalize to relative path
         parent, name = os.path.split(path)
         entry = get_next_item(self.get_entry(parent), name)
 
@@ -154,7 +162,7 @@ class DirListIterator(object):
                 result = self._get_first_item_recursive(entry, get_first_item=get_first_item) 
                 if result is not None:
                     return result
-                path = relpath(entry.path) # hmm, this is kinda bad, having to remember to call relpath everytime we alter `path`
+                path = self.relpath(entry.path) # hmm, this is kinda bad, having to remember to call relpath everytime we alter `path`
                 parent, name = os.path.split(path) # go up a level and try our sibling
                 entry = self.get_entry(parent)
                 entry = get_next_item(entry, name) # parent's sibling
@@ -165,7 +173,7 @@ class DirListIterator(object):
                 entry = get_next_item(self.get_entry(parent), name)
 
     def get_entry(self, path):
-        """Get the entry for the given path, and use a cache"""
+        """Get the entry for the given path, and use a cache; path must be a relative path"""
         if self.cache.has_key(path):
             return self.cache.get(path)
         # first time we see this, let's find it and remember it
@@ -212,6 +220,7 @@ if os.name == 'posix':
             if item is None: continue
             if c == 'j': item = iterator.next_item(item.path)
             if c == 'k': item = iterator.prev_item(item.path)
+            if '0' <= c <= '9': item = iterator.first_item_in(iterator.dir_entry.ls[int(c)].path)
 
 debug = True
 if debug and __name__ == '__main__':
