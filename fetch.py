@@ -97,7 +97,7 @@ class NotSubdirectoryError(Exception): pass
 
 class InvalidEntryName(Exception):
     def __init__(self, entry, name):
-        print "asked for %s from %s" % (name, entry.ls)
+        print "asked for %s from %s" % (name, entry.path)
 
 # ---------------- iteration instead of fetching ---- (test)
 
@@ -142,8 +142,9 @@ class DirListIterator(object):
             """ My algorithm to walk the tree starting from the DirEntry `entry`
                 and get the first non-directory entry
             """
-                
-        path = os.path.relpath(path, self.root_path) # normalize to relative path
+        def relpath(path):
+            return os.path.relpath(path, self.root_path)
+        path = relpath(path) # normalize to relative path
         parent, name = os.path.split(path)
         entry = get_next_item(self.get_entry(parent), name)
 
@@ -153,7 +154,7 @@ class DirListIterator(object):
                 result = self._get_first_item_recursive(entry, get_first_item=get_first_item) 
                 if result is not None:
                     return result
-                path = entry.path
+                path = relpath(entry.path) # hmm, this is kinda bad, having to remember to call relpath everytime we alter `path`
                 parent, name = os.path.split(path) # go up a level and try our sibling
                 entry = self.get_entry(parent)
                 entry = get_next_item(entry, name) # parent's sibling
