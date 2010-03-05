@@ -126,10 +126,11 @@ class DirListIterator(object):
 
     def first_item_in(self, path):
         print "getting first in ", path
-        return self._get_first_item_recursive(self.get_entry(self.relpath(path)))
-
-    def first_last_in(self, path):
-        return self._get_first_item_recursive(self.get_entry(self.relpath(path)), get_first_item=get_last_item)
+        path = self.relpath(path)
+        item = self._get_first_item_recursive(self.get_entry(path))
+        if item is None: # means this directory was empty!
+            item = self.next_item(path)
+        return item
 
     def next_item(self, path):
         return self._next_item(path)
@@ -138,7 +139,9 @@ class DirListIterator(object):
         return self._next_item(path, get_next_item=get_prev_item, get_first_item=get_last_item)
 
     def relpath(self, path):
-        return os.path.relpath(path, self.root_path)
+        if os.path.isabs(path):
+            return os.path.relpath(path, self.root_path)
+        return path
 
     def _next_item(self, path, get_next_item=get_next_item, get_first_item=get_first_item):
         """Get the next item after the one given by `path`
