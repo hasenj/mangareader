@@ -2,9 +2,10 @@
     Author: Hasen "hasenj" il Judy
     License: GPL v2
 
-    This module provides the functionality for directory fetching, which is used to make
-    the recursive directory listing as non-blocking as possible
+    This module provides the functionality for recursively iterating directory content
+    in an effecient way that doesn't block when the directory is huge and messy
 """
+
 import os
 
 # ------ some primitives ----------------
@@ -84,15 +85,6 @@ FORWARD, BACKWARD = 1, -1
 
 from time import time as now
 
-def fetch_items(fetcher, count, time):
-    """Fetch {{count}} items from fetcher, but stop if you're taking more than {{time}} seconds"""
-    start = now()
-    result = []
-    while len(result) < count and (now() - start) < time:
-        try: result.append(fetcher.next())
-        except StopIteration: break
-    return result
-
 class NotSubdirectoryError(Exception): pass
 
 class InvalidEntryName(Exception):
@@ -105,6 +97,9 @@ class DirListIterator(object):
     """ The iterator can start on a file path and walk through the 
         directory tree looking for the next or previous file that matches
         a certain type (images by default).
+
+        Unlike a C++/Java notion of an iterator, this one doesn't actually
+        remember what the last item was; you have to keep supplying it.
     """
     def __init__(self, root_path):
         """ @param root_path: the directory we walk inside """
@@ -193,6 +188,30 @@ def path_parts(path):
     if parts and parts[-1] == '': parts = parts[:-1]
     return parts
 
+def _get_next_x_items(iterator, item, count, attr='next_item'):
+    res = []
+    get_func = getattr(iterator, attr)
+    for x in range(count):
+        item = get_func(item)
+        res.append(item)
+    return res
+
+# Helper function for getting the context around an item
+def get_next_x_items(iterator, item, count):
+    return _get_next(iterator, item, count)
+def get_prev_x_items(iterator, item, count):
+    return _get_next(iterator, item, count, attr='prev_item')
+
+        
+def get_context(iterator, item, prev_count=4, next_count=12):
+    """Get the context around an a file (a partial view of the recursive file list
+    @param iterator: object for iterating the directory tree
+    @param item: the path for the file we want the context around
+    @param prev_count: how many items before?
+    @param next_count: how many items after?
+    @return: a list of file paths
+    """
+    return get_prev_x_items(iterator, item, prev_count) + [item] + get_next_x_items(iterator, item, next_count)
 
 ### debug stuff
 if os.name == 'posix':                                       
@@ -229,3 +248,4 @@ debug = True
 if debug and __name__ == '__main__':
     it = DirListIterator('/home/hasenj/manga/sample')
     step_test(it)
+
