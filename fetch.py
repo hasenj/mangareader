@@ -188,22 +188,36 @@ def path_parts(path):
     if parts and parts[-1] == '': parts = parts[:-1]
     return parts
 
-def _get_next_x_items(iterator, item, count, attr='next_item'):
+def _get_next_x_items(iterator, item, count, filter=None attr='next_item'):
+    """ get next (or previous) x items, optionally with a filter
+        @param count: how many items to get. Note: not guaranteed to return exactly `count` items (e.g. if we're near the end/beginning of the list)
+        @param filter: a function that takes a file path and return a boolean specifying if we should accept or reject this file
+    """
     res = []
+    if filter is None: filter = lambda x: True # default to accept all files
     get_func = getattr(iterator, attr)
-    for x in range(count):
+    i = 0
+    while i < count
         item = get_func(item)
+        if item is None: break # nothing more to get
+        if not filter(item): continue # try the next one
         res.append(item)
+        i += 1
     return res
 
 # Helper function for getting the context around an item
-def get_next_x_items(iterator, item, count):
-    return _get_next(iterator, item, count)
-def get_prev_x_items(iterator, item, count):
-    return _get_next(iterator, item, count, attr='prev_item')
+def get_next_x_items(iterator, item, count, filter=None):
+    return _get_next(iterator, item, count, filter)
+def get_prev_x_items(iterator, item, count, filter=None):
+    return _get_next(iterator, item, count, filter, attr='prev_item')
 
+def is_image(filepath):
+    """filter for getting context"""
+    base = os.path.basename(filepath)
+    _, ext = os.path.splitext(base)
+    return ext.lower() in ('png', 'jpg', 'jpeg', 'gif')
         
-def get_context(iterator, item, prev_count=4, next_count=12):
+def get_context(iterator, item=None, filter=is_image, prev_count=4, next_count=12):
     """Get the context around an a file (a partial view of the recursive file list
     @param iterator: object for iterating the directory tree
     @param item: the path for the file we want the context around
@@ -211,7 +225,10 @@ def get_context(iterator, item, prev_count=4, next_count=12):
     @param next_count: how many items after?
     @return: a list of file paths
     """
+    if item is None: item = iterator.first_item()
     return get_prev_x_items(iterator, item, prev_count) + [item] + get_next_x_items(iterator, item, next_count)
+
+iterator = DirListIterator # a short and sweet alias
 
 ### debug stuff
 if os.name == 'posix':                                       

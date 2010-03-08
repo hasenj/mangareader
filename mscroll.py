@@ -54,7 +54,9 @@ class Page(object):
         print "queueing:", self.path
         self.loading = 1
         queue_image_loader(image_loader)
+    @property
     def height(self):
+        self.load()
         if not self.is_loaded():
             return 10
         return self.frame.rect().height()
@@ -66,11 +68,12 @@ class Page(object):
 class PageList(object):
     def __init__(self, root):
         """ `root` is the manga root directory """
-        self.fetcher = fetch.Fetcher(root)
-        self.pages = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)]
+        self.iterator = fetch.iterator(root)
+        self.pages = []
+        self.reset_window(self.iterator.first_item())
         if len(self.pages) == 0:
             raise EmptyMangaError
-        self.cursor_page = self.pages[0]
+        self.index = 0
         self.cursor_pixel = 0
 
     def loaded_pages_count(self):
@@ -81,6 +84,10 @@ class PageList(object):
             else:
                 break
         return sum
+
+    @property
+    def current_page(self):
+        return self.pages[self.index]
 
     def change_chapter(self, path):
         self.fetcher = fetch.create_fetcher(self.fetcher.root, path)
@@ -99,55 +106,47 @@ class PageList(object):
 
     def move_cursor(self, amount):
         # amount is in pixels
-        current_index = self.pages.index(self.cursor_page)
+        # TODO: user cue for trying to overstep boundaries
         self.cursor_pixel += amount
-        if amount > 0 and (len(self.pages) - current_index) < 2: #we're getting close to the end and moving forward
-            self.fetch_more(fetch.FORWARD)
-        if amount < 0 and current_index < 2: #we're moving backward and getting close the beginning
-            self.fetch_more(fetch.BACKWARD)
-            # this changes current index, so re-calculate it
-            current_index = self.pages.index(self.cursor_page)
-        if self.cursor_page.is_loaded() and self.cursor_pixel > self.cursor_page.height():
-            # move to next page
-            next_index = current_index + 1
-            if len(self.pages) > next_index:
-                # happy case: move cursor page and adjust pixel offset
-                prev_height = self.cursor_page.height()
-                self.cursor_page = self.pages[next_index]
-                self.cursor_pixel -= prev_height
-        if self.cursor_pixel < 0:
-            # we're jumping up to previous page
-            prev_index = current_index - 1
-            if prev_index >= 0: #make sure we're not at the first page .. since it has no previous
-                # happy case: move cursor page and adjust pixel offset
-                self.cursor_page = self.pages[prev_index]
-                self.cursor_pixel += self.cursor_page.height()
+        # read: if
+        while self.cursor_pixel < 0: # we're moving backwards
+            ok = self.move_index(-1) # move to previous page
+            if not ok: 
+                self.cursor_pixel = 0
+                break
+            self.cursor_pixel += self.current_page.height
+        # read: if
+        while self.cursor_pixel > self.current_page.height:
+            ok = self.move_index(1)
+            height = self.current_page.height
+            if not ok:
+                self.cursor_pixel = self.current_page.height
+                break
+            self.cursor_pixel -= height
                 
-    def fetch_more(self, direction):
-        # prepare fetcher
-        print "fetching .."
-        if not self.pages:
-            print "no pages, not sure how to fetch" # DEBUG
-            return
-        if direction not in (1,-1):
-            raise FetchError("invalid direction")
-        if direction == fetch.FORWARD:
-            last = self.pages[-1].path
-        else:
-            last = self.pages[0].path
-        if (self.fetcher.direction != direction or
-            self.fetcher.last != last): # fetcher not in sync with us
-            self.fetcher = fetch.create_fetcher(self.fetcher.root, last, direction)
-        # fetch from next
-        if direction == fetch.FORWARD:
-            # add pages to the end
-            fetch_result = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)]
-            self.pages = self.pages[-4:] + fetch_result
-        else:
-            # add pages to beginning, in reverse
-            fetch_result = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)][::-1]
-            self.pages = fetch_result + self.pages[:4]
-            # TODO adjust index cursor? well we don't have the index cursor yet!!
+    def move_index(self, steps):
+        """ move the index `steps` steps, and optionally readjusts the context/window
+            @returns: whether or not we overstepped our boundaries
+        """
+        old_page = self.current_page
+        new_index += steps
+        if new_index < 0:
+            temp_list = fetch.get_context(self.iterator, self.current_page.path, prev_count=-steps)
+            self.reset_window(temp_list[0]) # reset the index around the first item
+            return self.current_page is not old_page # return ok if we actually moved somewhere
+        elif new_index > len(self.pages):
+            temp_list = fetch.get_context(self.iterator, self.current_page.path, next_count=steps)
+            self.reset_window(temp_list[-1])
+            return self.current_page is not old_page # return ok if we actually moved somewhere
+        else: # everything is ok
+            self.index = new_index
+            return True
+
+    def reset_window(self, path):
+        """resets the view/window around the given file path"""
+        list = fetch.get_context(iterator, path)
+        self.pages = [Page(i) for i in list]
+        self.index = list.find(path)
 
 class EmptyPageList(object):
     def __init__(self): pass
