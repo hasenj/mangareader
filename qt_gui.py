@@ -35,7 +35,7 @@ class MainWindow(QtGui.QMainWindow):
         self.step = 100
         self.big_step = 600
         self.update_notice = False
-        self.last_frame_count = 0 # we use this to know to re-render when new pages are loaded!
+        self.last_pages_count = 0 # we use this to know to re-render when new pages are loaded!
 
         open = QtGui.QAction(QtGui.QIcon("art/open.png"), "Open Manga", self)
         open.setShortcut('Ctrl+O')
