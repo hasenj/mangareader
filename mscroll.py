@@ -163,7 +163,8 @@ class PageList(object):
         self.index = index
 
 class EmptyPageList(object):
-    def __init__(self): pass
+    def __init__(self):
+        self.pages = []
     def scroll_up(self, step=0): pass
     def scroll_down(self, step=0): pass
     def move_cursor(self, amount): pass
