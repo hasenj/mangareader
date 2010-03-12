@@ -13,10 +13,20 @@ import os
 def real_path(root):
     return os.path.realpath(root)
 
-def dir_entry_list(root):
+def default_sort(list): # TODO consider heuristic sorting
+    return sorted(list)
+
+def is_image(filepath):
+    """filter for dir listing"""
+    _, ext = os.path.splitext(filepath)
+    return ext.lower() in ('.png', '.jpg', '.jpeg', '.gif')
+        
+def dir_entry_list(root, sort_func=default_sort, filterer=is_image):
     root = real_path(root)
-    return [DirEntry(os.path.join(root, name))
-            for name in sorted(os.listdir(root))] # TODO consider heuristic sorting
+    listing = [DirEntry(os.path.join(root, name))
+            for name in sort_func(os.listdir(root))] 
+    listing = [item for item in listing if item.isdir or filterer(item.path)]
+    return listing
 
 class DirEntry(object):
     def __init__(self, path):
@@ -146,10 +156,6 @@ class DirListIterator(object):
 
             @returns: the DirEntry for the item (we probably just want the path from it)
         """
-        def get_most_next_item(entry):
-            """ My algorithm to walk the tree starting from the DirEntry `entry`
-                and get the first non-directory entry
-            """
         path = self.relpath(path) # normalize to relative path
         parent, name = os.path.split(path)
         entry = get_next_item(self.get_entry(parent), name)
@@ -188,45 +194,35 @@ def path_parts(path):
     if parts and parts[-1] == '': parts = parts[:-1]
     return parts
 
-def _get_next_x_items(iterator, item, count, filter=None attr='next_item'):
-    """ get next (or previous) x items, optionally with a filter
+def _get_next_x_items(iterator, item, count, attr='next_item'):
+    """ get next (or previous) x items
         @param count: how many items to get. Note: not guaranteed to return exactly `count` items (e.g. if we're near the end/beginning of the list)
         @param filter: a function that takes a file path and return a boolean specifying if we should accept or reject this file
     """
     res = []
-    if filter is None: filter = lambda x: True # default to accept all files
     get_func = getattr(iterator, attr)
-    i = 0
-    while i < count
+    for x in range(count):
         item = get_func(item)
         if item is None: break # nothing more to get
-        if not filter(item): continue # try the next one
-        res.append(item)
-        i += 1
+        res.append(item.path)
     return res
 
-# Helper function for getting the context around an item
-def get_next_x_items(iterator, item, count, filter=None):
-    return _get_next(iterator, item, count, filter)
-def get_prev_x_items(iterator, item, count, filter=None):
-    return _get_next(iterator, item, count, filter, attr='prev_item')
+# Helper functions for getting the context around an item
+def get_next_x_items(iterator, item, count): return _get_next_x_items(iterator, item, count)
+def get_prev_x_items(iterator, item, count): return _get_next_x_items(iterator, item, count, attr='prev_item')
 
-def is_image(filepath):
-    """filter for getting context"""
-    base = os.path.basename(filepath)
-    _, ext = os.path.splitext(base)
-    return ext.lower() in ('png', 'jpg', 'jpeg', 'gif')
-        
-def get_context(iterator, item=None, filter=is_image, prev_count=4, next_count=12):
-    """Get the context around an a file (a partial view of the recursive file list
+def get_context(iterator, item=None, prev_count=4, next_count=12):
+    """Get the context around an a file -- used for making a partial view of the recursive file list
     @param iterator: object for iterating the directory tree
     @param item: the path for the file we want the context around
     @param prev_count: how many items before?
     @param next_count: how many items after?
-    @return: a list of file paths
+    @returns: (list, index) where list is a partial file list and index is the index of the item in the list
     """
     if item is None: item = iterator.first_item()
-    return get_prev_x_items(iterator, item, prev_count) + [item] + get_next_x_items(iterator, item, next_count)
+    prev = get_prev_x_items(iterator, item, prev_count)
+    next = get_next_x_items(iterator, item, next_count)
+    return prev + [item] + next, len(prev)
 
 iterator = DirListIterator # a short and sweet alias
 

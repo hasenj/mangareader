@@ -58,7 +58,7 @@ class Page(object):
     def height(self):
         self.load()
         if not self.is_loaded():
-            return 10
+            return 200 # some weird default? :/
         return self.frame.rect().height()
     def get_frame(self):
         if not self.is_loaded():
@@ -130,7 +130,7 @@ class PageList(object):
         """
         old_page = self.current_page
         new_index += steps
-        if new_index < 0:
+        if new_index < 0: # FIXME: I don't quite like how we call get_context in such a hackish way
             temp_list = fetch.get_context(self.iterator, self.current_page.path, prev_count=-steps)
             self.reset_window(temp_list[0]) # reset the index around the first item
             return self.current_page is not old_page # return ok if we actually moved somewhere
@@ -144,9 +144,9 @@ class PageList(object):
 
     def reset_window(self, path):
         """resets the view/window around the given file path"""
-        list = fetch.get_context(iterator, path)
+        list, index = fetch.get_context(self.iterator, path)
         self.pages = [Page(i) for i in list]
-        self.index = list.find(path)
+        self.index = index
 
 class EmptyPageList(object):
     def __init__(self): pass
@@ -188,12 +188,12 @@ def paint_scroller(painter, scroller, count=3):
         @return number of frames rendered (so we know if we need to update)
     """
     if scroller.page_list.loaded_pages_count() < 0: return
-    index = scroller.page_list.cursor_index()
-    pages = scroller.page_list.pages[index:index+count]
+    index = scroller.page_list.index
+    pages = scroller.page_list.pages[index:index+count] # FIXME: hmm, why is the iteration built into the page list? maybe we should do it as a mapping from filenames to image/page objects
     # setup loading parameters
     # TODO: fix, should be viewing parameters? 
     max_width = painter.viewport().width()
-    size_kw = { 'max_width': max_width }
+    size_kw = {'max_width': max_width}
     for page in pages:
         page.load(**size_kw) # load page in background, if not already loaded
     frames = [p.get_frame() for p in pages if p.is_loaded()]
