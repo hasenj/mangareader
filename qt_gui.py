@@ -77,17 +77,18 @@ class MainWindow(QtGui.QMainWindow):
 
     def keyPressEvent(self, event):
         key = event.text()
-        if key == 'j':
+        qt_key = event.key()
+        if key == 'j' or qt_key == QtCore.Qt.Key_Down:
             self.scrollDown(self.step)
-        if key == 'k':
+        if key == 'k' or qt_key == QtCore.Qt.Key_Up:
             self.scrollUp(self.step)
-        if key == 'J':
+        if key == 'J' or qt_key == QtCore.Qt.Key_PageDown:
             self.scrollDown(self.big_step)
-        if key == 'K':
+        if key == 'K' or qt_key == QtCore.Qt.Key_PageUp:
             self.scrollUp(self.big_step)
         if key == ' ':
             self.scrollDown(self.big_step)
-        if key == 'q':
+        if key == 'q' or qt_key == QtCore.Qt.Key_Escape:
             QtGui.QApplication.instance().quit()
         if key == 'o':
             self.choose_manga()
