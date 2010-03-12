@@ -116,31 +116,39 @@ class PageList(object):
                 break
             self.cursor_pixel += self.current_page.height
         # read: if
+        print "index:", self.index
+        print "pixel:", self.cursor_pixel
         while self.cursor_pixel > self.current_page.height:
+            print "index:", self.index
+            print "pixel:", self.cursor_pixel
+            new_pixel = self.cursor_pixel - self.current_page.height
             ok = self.move_index(1)
-            height = self.current_page.height
             if not ok:
                 self.cursor_pixel = self.current_page.height
                 break
-            self.cursor_pixel -= height
+            self.cursor_pixel = new_pixel
                 
     def move_index(self, steps):
         """ move the index `steps` steps, and optionally readjusts the context/window
             @returns: whether or not we overstepped our boundaries
         """
-        old_page = self.current_page
-        new_index += steps
-        if new_index < 0: # FIXME: I don't quite like how we call get_context in such a hackish way
-            temp_list = fetch.get_context(self.iterator, self.current_page.path, prev_count=-steps)
-            self.reset_window(temp_list[0]) # reset the index around the first item
-            return self.current_page is not old_page # return ok if we actually moved somewhere
-        elif new_index > len(self.pages):
-            temp_list = fetch.get_context(self.iterator, self.current_page.path, next_count=steps)
-            self.reset_window(temp_list[-1])
-            return self.current_page is not old_page # return ok if we actually moved somewhere
-        else: # everything is ok
-            self.index = new_index
-            return True
+        if steps not in (1, -1):
+            raise Exception("stepping move than one step is not supported")
+        if steps == 1:
+            if self.index + 2 < len(self.pages): # don't need to move window
+                self.index += 1
+                return True
+            newpath = self.iterator.next_item(self.current_page.path)
+        elif steps == -1:
+            if self.index > 0: # don't need to move window
+                self.index -= 1
+                return True
+            newpath = self.iterator.prev_item(self.current_page.path)
+        # if we get here, we needed to move window
+        if newpath is None: # we're at the edges!!
+            return False # not ok
+        self.reset_window(newpath)
+        return True # ok
 
     def reset_window(self, path):
         """resets the view/window around the given file path"""
