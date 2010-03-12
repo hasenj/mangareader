@@ -70,8 +70,8 @@ class DirEntry(object):
         type = "dir " if self.isdir else "file"
         return "[%s] %s" % (type, self.name) 
 
-def get_offset_item(entry, name, offset):
-    """Get an item that's `offset` steps apart from the item with `name` in the DirEntry `entry`"""
+def get_offset_entry(entry, name, offset):
+    """Get an entry that's `offset` steps apart from the item with `name` in the DirEntry `entry`"""
     index = entry.get_entry_index(name)
     ls = entry.ls
     if 0 <= index+offset < len(ls):
@@ -80,15 +80,15 @@ def get_offset_item(entry, name, offset):
         return None
 
 # kind of low level functions ..
-def get_next_item(entry, name): return get_offset_item(entry, name, 1)        
-def get_prev_item(entry, name): return get_offset_item(entry, name, -1)        
+def get_next_entry(entry, name): return get_offset_entry(entry, name, 1)        
+def get_prev_entry(entry, name): return get_offset_entry(entry, name, -1)        
 
 def get_first_item(entry): 
-    if len(entry.ls): return entry.ls[0] 
+    if len(entry.ls): return entry.ls[0].path
     else: return None
 
 def get_last_item(entry): 
-    if len(entry.ls): return entry.ls[-1] 
+    if len(entry.ls): return entry.ls[-1].path
     else: return None
 
 FORWARD, BACKWARD = 1, -1
@@ -121,7 +121,7 @@ class DirListIterator(object):
         if not entry.isdir: return entry.path # base case
         first = get_first_item(entry)
         if first is None: return None
-        return self._get_first_item_recursive(first, get_first_item=get_first_item)
+        return self.next_item(first)
 
     def first_item(self):
         """returns the path to the first item (first leaf node(file)) in the directory tree, recursively"""
@@ -144,14 +144,14 @@ class DirListIterator(object):
         return self._next_item(path)
 
     def prev_item(self, path):
-        return self._next_item(path, get_next_item=get_prev_item, get_first_item=get_last_item)
+        return self._next_item(path, get_next_entry=get_prev_entry, get_first_item=get_last_item)
 
     def relpath(self, path):
         if os.path.isabs(path):
             return os.path.relpath(path, self.root_path)
         return path
 
-    def _next_item(self, path, get_next_item=get_next_item, get_first_item=get_first_item):
+    def _next_item(self, path, get_next_entry=get_next_entry, get_first_item=get_first_item):
         """Get the next item after the one given by `path`
         
             This is a private function, used to abstract away the differences between getting
@@ -161,7 +161,8 @@ class DirListIterator(object):
         """
         path = self.relpath(path) # normalize to relative path
         parent, name = os.path.split(path)
-        entry = get_next_item(self.get_entry(parent), name)
+        entry = get_next_entry(self.get_entry(parent), name)
+        print "sibling is", entry.path
 
         while True:
             if entry is not None:
@@ -172,12 +173,12 @@ class DirListIterator(object):
                 path = self.relpath(entry.path) # hmm, this is kinda bad, having to remember to call relpath everytime we alter `path`
                 parent, name = os.path.split(path) # go up a level and try our sibling
                 entry = self.get_entry(parent)
-                entry = get_next_item(entry, name) # parent's sibling
+                entry = get_next_entry(entry, name) # parent's sibling
             if entry is None:
                 if parent in ('', '/'): # we're at the very end, nothing more!!
                     return None
                 parent, name = os.path.split(parent) # this level is done, go up
-                entry = get_next_item(self.get_entry(parent), name)
+                entry = get_next_entry(self.get_entry(parent), name)
 
     def get_entry(self, path):
         """Get the entry for the given path, and use a cache; path must be a relative path"""
@@ -263,6 +264,7 @@ if os.name == 'posix':
 
 debug = True
 if debug and __name__ == '__main__':
-    it = DirListIterator('/home/hasenj/manga')
+    it = DirListIterator('/home/hasenj/manga/')
     step_test(it)
+
 
