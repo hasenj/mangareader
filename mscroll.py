@@ -92,8 +92,7 @@ class PageList(object):
         return self.pages[self.index]
 
     def change_chapter(self, path):
-        self.fetcher = fetch.create_fetcher(self.fetcher.root, path)
-        self.pages = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)]
+        self.reset_window(path)
         self.cursor_page = self.pages[0]
         self.cursor_pixel = 0
 
