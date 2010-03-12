@@ -28,8 +28,10 @@ class Page(object):
         self.frame = None
         self.scaled = {}
 
+    @property
     def is_loaded(self): 
         return self.loading == 2
+
     def load(self, max_width=None):
         """
             Load page in the background, if not already loaded.
@@ -57,11 +59,11 @@ class Page(object):
     @property
     def height(self):
         self.load()
-        if not self.is_loaded():
-            return 200 # some weird default? :/
+        if not self.is_loaded:
+            return 800 # some weird default? :/
         return self.frame.rect().height()
     def get_frame(self):
-        if not self.is_loaded():
+        if not self.is_loaded:
             return None
         return self.frame
 
@@ -79,7 +81,7 @@ class PageList(object):
     def loaded_pages_count(self):
         sum = 0
         for page in self.pages:
-            if page.is_loaded():
+            if page.is_loaded:
                 sum +=1
             else:
                 break
@@ -114,13 +116,16 @@ class PageList(object):
             if not ok: 
                 self.cursor_pixel = 0
                 break
+            if not self.current_page.is_loaded:  # don't proceed if page is not loaded (we don't know its height)
+                print "Breaking out -- page is not loaded yet!! (backward)"
+                self.index += 1 # restore index
+                break # really?
             self.cursor_pixel += self.current_page.height
         # read: if
-        print "index:", self.index
-        print "pixel:", self.cursor_pixel
         while self.cursor_pixel > self.current_page.height:
-            print "index:", self.index
-            print "pixel:", self.cursor_pixel
+            if not self.current_page.is_loaded:  # don't proceed if page is not loaded (we don't know its height)
+                print "Breaking out -- page is not loaded yet!! (forward)"
+                break # really?
             new_pixel = self.cursor_pixel - self.current_page.height
             ok = self.move_index(1)
             if not ok:
@@ -202,9 +207,9 @@ def paint_scroller(painter, scroller, count=3):
     # TODO: fix, should be viewing parameters? 
     max_width = painter.viewport().width()
     size_kw = {'max_width': max_width}
-    for page in pages:
+    for page in scroller.page_list.pages:
         page.load(**size_kw) # load page in background, if not already loaded
-    frames = [p.get_frame() for p in pages if p.is_loaded()]
+    frames = [p.get_frame() for p in pages if p.is_loaded]
     y = -scroller.page_list.cursor_pixel
     fstrip.paint_frames(painter, frames, y)
     return len(frames) 
