@@ -263,6 +263,6 @@ if os.name == 'posix':
 
 debug = True
 if debug and __name__ == '__main__':
-    it = DirListIterator('/home/hasenj/manga/sample')
+    it = DirListIterator('/home/hasenj/manga')
     step_test(it)
 
