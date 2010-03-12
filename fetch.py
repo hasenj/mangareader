@@ -118,18 +118,21 @@ class DirListIterator(object):
         self.cache = {} # maps paths to entries
 
     def _get_first_item_recursive(self, entry, get_first_item=get_first_item):
-        if not entry.isdir: return entry
+        if not entry.isdir: return entry.path # base case
         first = get_first_item(entry)
         if first is None: return None
         return self._get_first_item_recursive(first, get_first_item=get_first_item)
 
     def first_item(self):
+        """returns the path to the first item (first leaf node(file)) in the directory tree, recursively"""
         return self._get_first_item_recursive(self.dir_entry)
 
     def last_item(self):
+        """returns the path to the last item (last leaf node(file)) in the directory tree, recursively"""
         return self._get_first_item_recursive(self.dir_entry, get_first_item=get_last_item)
 
     def first_item_in(self, path):
+        """returns the path to the first item inside a certain subdirectory"""
         print "getting first in ", path
         path = self.relpath(path)
         item = self._get_first_item_recursive(self.get_entry(path))
@@ -154,7 +157,7 @@ class DirListIterator(object):
             This is a private function, used to abstract away the differences between getting
             the next and the previous items
 
-            @returns: the DirEntry for the item (we probably just want the path from it)
+            @returns: the absolute path of the item
         """
         path = self.relpath(path) # normalize to relative path
         parent, name = os.path.split(path)
@@ -165,7 +168,7 @@ class DirListIterator(object):
                 # This should work whether entry is a dir or a file
                 result = self._get_first_item_recursive(entry, get_first_item=get_first_item) 
                 if result is not None:
-                    return result
+                    return result # here we return .. with the path
                 path = self.relpath(entry.path) # hmm, this is kinda bad, having to remember to call relpath everytime we alter `path`
                 parent, name = os.path.split(path) # go up a level and try our sibling
                 entry = self.get_entry(parent)
@@ -204,7 +207,7 @@ def _get_next_x_items(iterator, item, count, attr='next_item'):
     for x in range(count):
         item = get_func(item)
         if item is None: break # nothing more to get
-        res.append(item.path)
+        res.append(item)
     return res
 
 # Helper functions for getting the context around an item
@@ -248,14 +251,14 @@ if os.name == 'posix':
     def step_test(iterator):
         item = iterator.first_item()
         while True:
-            print item.path
+            print item
             c = getch()
             if c == 'q':
                 break
             if item is None: continue
-            if c == 'j': item = iterator.next_item(item.path)
-            if c == 'k': item = iterator.prev_item(item.path)
-            if '0' <= c <= '9': item = iterator.first_item_in(iterator.dir_entry.ls[int(c)].path)
+            if c == 'j': item = iterator.next_item(item)
+            if c == 'k': item = iterator.prev_item(item)
+            if '0' <= c <= '9': item = iterator.first_item_in(iterator.dir_entry.ls[int(c)].path) # start from the nth directory (simulate jumping to a chapter)
 
 debug = True
 if debug and __name__ == '__main__':
