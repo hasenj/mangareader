@@ -83,8 +83,6 @@ class PageList(object):
         for page in self.pages:
             if page.is_loaded:
                 sum +=1
-            else:
-                break
         return sum
 
     @property
@@ -203,15 +201,16 @@ def paint_scroller(painter, scroller, count=3):
 
         @return number of frames rendered (so we know if we need to update)
     """
-    if scroller.page_list.loaded_pages_count() < 0: return
-    index = scroller.page_list.index
-    pages = scroller.page_list.pages[index:index+count] # FIXME: hmm, why is the iteration built into the page list? maybe we should do it as a mapping from filenames to image/page objects
-    # setup loading parameters
-    # TODO: fix, should be viewing parameters? 
+    # First, load any unloaded image:
+    #   setup loading parameters
+    #   TODO: fix, should be viewing parameters? 
     max_width = painter.viewport().width()
     size_kw = {'max_width': max_width}
     for page in scroller.page_list.pages:
         page.load(**size_kw) # load page in background, if not already loaded
+    if scroller.page_list.loaded_pages_count() <= 0: return
+    index = scroller.page_list.index
+    pages = scroller.page_list.pages[index:index+count] # FIXME: hmm, why is the iteration built into the page list? maybe we should do it as a mapping from filenames to image/page objects
     frames = [p.get_frame() for p in pages if p.is_loaded]
     y = -scroller.page_list.cursor_pixel
     fstrip.paint_frames(painter, frames, y)

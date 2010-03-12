@@ -45,7 +45,7 @@ class MainWindow(QtGui.QMainWindow):
 
         self.timer = QtCore.QTimer()
         self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timerEvent)
-        self.timer.start(800) # number is msec
+        self.timer.start(80) # number is msec
 
         # toolbar = self.addToolBar('Manga')
         # toolbar.addAction(open)
@@ -85,6 +85,8 @@ class MainWindow(QtGui.QMainWindow):
             self.scrollDown(self.big_step)
         if key == 'K':
             self.scrollUp(self.big_step)
+        if key == ' ':
+            self.scrollDown(self.big_step)
         if key == 'q':
             QtGui.QApplication.instance().quit()
         if key == 'o':
@@ -100,13 +102,16 @@ class MainWindow(QtGui.QMainWindow):
         self.repaint()
 
     def paintEvent(self, event):
+        self.last_pages_count = self.scroller.loaded_pages_count()
         painter = QtGui.QPainter()
         painter.begin(self)
-        self.last_pages_count = mscroll.paint_scroller(painter, self.scroller)
+        mscroll.paint_scroller(painter, self.scroller)
         painter.end()
 
     def timerEvent(self):
         if self.scroller.loaded_pages_count() > self.last_pages_count:
+            print "Repainting .."
+            self.last_pages_count = self.scroller.loaded_pages_count()
             self.repaint()
 
 
