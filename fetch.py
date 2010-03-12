@@ -223,6 +223,7 @@ def get_context(iterator, item=None, prev_count=4, next_count=12):
     @returns: (list, index) where list is a partial file list and index is the index of the item in the list
     """
     if item is None: item = iterator.first_item()
+    if item is None: return [], 0 # though 0 doesn't really make sense, but calling code should handle empty list gracefully
     prev = get_prev_x_items(iterator, item, prev_count)
     next = get_next_x_items(iterator, item, next_count)
     return prev + [item] + next, len(prev)
