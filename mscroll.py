@@ -119,12 +119,16 @@ class PageList(object):
             if not self.current_page.is_loaded:  # don't proceed if page is not loaded (we don't know its height)
                 print "Breaking out -- page is not loaded yet!! (backward)"
                 self.index += 1 # restore index
+                self.cursor_pixel = 0
                 break # really?
             self.cursor_pixel += self.current_page.height
         # read: if
         while self.cursor_pixel > self.current_page.height:
             if not self.current_page.is_loaded:  # don't proceed if page is not loaded (we don't know its height)
                 print "Breaking out -- page is not loaded yet!! (forward)"
+                # restore index to previous page
+                self.index -= 1
+                self.cursor_pixel = self.current_page.height - 1
                 break # really?
             new_pixel = self.cursor_pixel - self.current_page.height
             ok = self.move_index(1)
