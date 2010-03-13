@@ -4,6 +4,12 @@
 
     This module provides the functionality for recursively iterating directory content
     in an effecient way that doesn't block when the directory is huge and messy
+
+    Terminology notes:
+
+        - Sometimes things can be confusing: are we passing a path or a directory entry? so:
+            item: means the file path
+            entry: means the DirEntry object
 """
 
 import os
@@ -83,12 +89,12 @@ def get_offset_entry(entry, name, offset):
 def get_next_entry(entry, name): return get_offset_entry(entry, name, 1)        
 def get_prev_entry(entry, name): return get_offset_entry(entry, name, -1)        
 
-def get_first_item(entry): 
-    if len(entry.ls): return entry.ls[0].path
+def get_first_entry(entry): 
+    if len(entry.ls): return entry.ls[0]
     else: return None
 
-def get_last_item(entry): 
-    if len(entry.ls): return entry.ls[-1].path
+def get_last_entry(entry): 
+    if len(entry.ls): return entry.ls[-1]
     else: return None
 
 FORWARD, BACKWARD = 1, -1
@@ -117,11 +123,21 @@ class DirListIterator(object):
         self.dir_entry = DirEntry(self.root_path)
         self.cache = {} # maps paths to entries
 
-    def _get_first_item_recursive(self, entry, get_first_item=get_first_item):
-        if not entry.isdir: return entry.path # base case
-        first = get_first_item(entry)
-        if first is None: return None
-        return self.next_item(first)
+    def _get_first_item_recursive(self, entry, get_first_entry=get_first_entry, next_item='next_item'):
+        """Recursively get the first item, if none, get the best next item (first leaf node)
+            @param entry: the directory where we want to get the first item inside it
+            @param get_first_entry: the function for getting the first entry (can be set to get_last_entry for opposite effect)
+            @param next_item: name of the attribute for the next_item (could be set to 'prev_item' for opposite effect)
+            @note: if you set get_first_entry to get_last_entry, then you also have to set next_item to 'prev_item'
+            @return: path to the item
+        """
+        first = get_first_entry(entry)
+        if first is None:
+            return getattr(self, next_item)(entry.path)
+        elif first.isdir:
+            return self._get_first_item_recursive(first, get_first_entry, next_item)
+        else:
+            return first.path # base case
 
     def first_item(self):
         """returns the path to the first item (first leaf node(file)) in the directory tree, recursively"""
@@ -129,7 +145,7 @@ class DirListIterator(object):
 
     def last_item(self):
         """returns the path to the last item (last leaf node(file)) in the directory tree, recursively"""
-        return self._get_first_item_recursive(self.dir_entry, get_first_item=get_last_item)
+        return self._get_first_item_recursive(self.dir_entry, get_first_entry=get_last_entry, next_item='prev_item')
 
     def first_item_in(self, path):
         """returns the path to the first item inside a certain subdirectory"""
@@ -144,14 +160,14 @@ class DirListIterator(object):
         return self._next_item(path)
 
     def prev_item(self, path):
-        return self._next_item(path, get_next_entry=get_prev_entry, get_first_item=get_last_item)
+        return self._next_item(path, get_next_entry=get_prev_entry, get_first_entry=get_last_entry)
 
     def relpath(self, path):
         if os.path.isabs(path):
             return os.path.relpath(path, self.root_path)
         return path
 
-    def _next_item(self, path, get_next_entry=get_next_entry, get_first_item=get_first_item):
+    def _next_item(self, path, get_next_entry=get_next_entry, get_first_entry=get_first_entry):
         """Get the next item after the one given by `path`
         
             This is a private function, used to abstract away the differences between getting
@@ -159,6 +175,7 @@ class DirListIterator(object):
 
             @returns: the absolute path of the item
         """
+        print "iteration:", path
         path = self.relpath(path) # normalize to relative path
         parent, name = os.path.split(path)
         entry = get_next_entry(self.get_entry(parent), name)
@@ -167,7 +184,7 @@ class DirListIterator(object):
         while True:
             if entry is not None:
                 # This should work whether entry is a dir or a file
-                result = self._get_first_item_recursive(entry, get_first_item=get_first_item) 
+                result = self._get_first_item_recursive(entry, get_first_entry=get_first_entry) 
                 if result is not None:
                     return result # here we return .. with the path
                 path = self.relpath(entry.path) # hmm, this is kinda bad, having to remember to call relpath everytime we alter `path`
