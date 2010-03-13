@@ -28,8 +28,10 @@ class Page(object):
         self.frame = None
         self.scaled = {}
 
+    @property
     def is_loaded(self): 
         return self.loading == 2
+
     def load(self, max_width=None):
         """
             Load page in the background, if not already loaded.
@@ -54,38 +56,41 @@ class Page(object):
         print "queueing:", self.path
         self.loading = 1
         queue_image_loader(image_loader)
+    @property
     def height(self):
-        if not self.is_loaded():
-            return 10
+        self.load()
+        if not self.is_loaded:
+            return 800 # some weird default? :/
         return self.frame.rect().height()
     def get_frame(self):
-        if not self.is_loaded():
+        if not self.is_loaded:
             return None
         return self.frame
 
-
-class MangaScroller(object):
+class PageList(object):
     def __init__(self, root):
-        """ `root` is the manga root directory"""
-        self.fetcher = fetch.Fetcher(root)
-        self.pages = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)]
+        """ `root` is the manga root directory """
+        self.iterator = fetch.iterator(root)
+        self.pages = []
+        self.reset_window(self.iterator.first_item())
         if len(self.pages) == 0:
             raise EmptyMangaError
-        self.cursor_page = self.pages[0]
+        self.index = 0
         self.cursor_pixel = 0
 
     def loaded_pages_count(self):
         sum = 0
         for page in self.pages:
-            if page.is_loaded():
+            if page.is_loaded:
                 sum +=1
-            else:
-                break
         return sum
 
+    @property
+    def current_page(self):
+        return self.pages[self.index]
+
     def change_chapter(self, path):
-        self.fetcher = fetch.create_fetcher(self.fetcher.root, path)
-        self.pages = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)]
+        self.reset_window(path)
         self.cursor_page = self.pages[0]
         self.cursor_pixel = 0
 
@@ -100,55 +105,94 @@ class MangaScroller(object):
 
     def move_cursor(self, amount):
         # amount is in pixels
-        current_index = self.pages.index(self.cursor_page)
+        # TODO: user cue for trying to overstep boundaries
         self.cursor_pixel += amount
-        if amount > 0 and (len(self.pages) - current_index) < 2: #we're getting close to the end and moving forward
-            self.fetch_more(fetch.FORWARD)
-        if amount < 0 and current_index < 2: #we're moving backward and getting close the beginning
-            self.fetch_more(fetch.BACKWARD)
-            # this changes current index, so re-calculate it
-            current_index = self.pages.index(self.cursor_page)
-        if self.cursor_page.is_loaded() and self.cursor_pixel > self.cursor_page.height():
-            # move to next page
-            next_index = current_index + 1
-            if len(self.pages) > next_index:
-                # happy case: move cursor page and adjust pixel offset
-                prev_height = self.cursor_page.height()
-                self.cursor_page = self.pages[next_index]
-                self.cursor_pixel -= prev_height
-        if self.cursor_pixel < 0:
-            # we're jumping up to previous page
-            prev_index = current_index - 1
-            if prev_index >= 0: #make sure we're not at the first page .. since it has no previous
-                # happy case: move cursor page and adjust pixel offset
-                self.cursor_page = self.pages[prev_index]
-                self.cursor_pixel += self.cursor_page.height()
+        # read: if
+        while self.cursor_pixel < 0: # we're moving backwards
+            ok = self.move_index(-1) # move to previous page
+            if not ok: 
+                self.cursor_pixel = 0
+                break
+            if not self.current_page.is_loaded:  # don't proceed if page is not loaded (we don't know its height)
+                print "Breaking out -- page is not loaded yet!! (backward)"
+                self.index += 1 # restore index
+                self.cursor_pixel = 0
+                break # really?
+            self.cursor_pixel += self.current_page.height
+        # read: if
+        while self.cursor_pixel > self.current_page.height:
+            if not self.current_page.is_loaded:  # don't proceed if page is not loaded (we don't know its height)
+                print "Breaking out -- page is not loaded yet!! (forward)"
+                # restore index to previous page
+                self.index -= 1
+                self.cursor_pixel = self.current_page.height - 1
+                break # really?
+            new_pixel = self.cursor_pixel - self.current_page.height
+            ok = self.move_index(1)
+            if not ok:
+                self.cursor_pixel = self.current_page.height
+                break
+            self.cursor_pixel = new_pixel
                 
-    def fetch_more(self, direction):
-        # prepare fetcher
-        if not self.pages:
-            print "no pages, not sure how to fetch" # DEBUG
-            return
-        if direction not in (1,-1):
-            raise FetchError("invalid direction")
-        if direction == fetch.FORWARD:
-            last = self.pages[-1].path
-        else:
-            last = self.pages[0].path
-        if (self.fetcher.direction != direction or
-            self.fetcher.last != last): # fetcher not in sync with us
-            self.fetcher = fetch.create_fetcher(self.fetcher.root, last, direction)
-        # fetch from next
-        if direction == fetch.FORWARD:
-            # add pages to the end
-            fetch_result = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)]
-            self.pages = self.pages[-4:] + fetch_result
-        else:
-            # add pages to beginning, in reverse
-            fetch_result = [Page(i) for i in fetch.fetch_items(self.fetcher, 10, 0.1)][::-1]
-            self.pages = fetch_result + self.pages[:4]
-            # TODO adjust index cursor? well we don't have the index cursor yet!!
+    def move_index(self, steps):
+        """ move the index `steps` steps, and optionally readjusts the context/window
+            @returns: whether or not we overstepped our boundaries
+        """
+        if steps not in (1, -1):
+            raise Exception("stepping move than one step is not supported")
+        if steps == 1:
+            if self.index + 2 < len(self.pages): # don't need to move window
+                self.index += 1
+                return True
+            newpath = self.iterator.next_item(self.current_page.path)
+        elif steps == -1:
+            if self.index > 0: # don't need to move window
+                self.index -= 1
+                return True
+            newpath = self.iterator.prev_item(self.current_page.path)
+        # if we get here, we needed to move window
+        if newpath is None: # we're at the edges!!
+            return False # not ok
+        self.reset_window(newpath)
+        return True # ok
 
+    def reset_window(self, path):
+        """resets the view/window around the given file path"""
+        list, index = fetch.get_context(self.iterator, path)
+        self.pages = [Page(i) for i in list]
+        self.index = index
+
+class EmptyPageList(object):
+    def __init__(self):
+        self.pages = []
+    def scroll_up(self, step=0): pass
+    def scroll_down(self, step=0): pass
+    def move_cursor(self, amount): pass
+    def loaded_pages_count(self): return -1
+
+class MangaScroller(object):
+    def __init__(self, root):
+        try: 
+            self.page_list = PageList(root)
+        except EmptyMangaError: 
+            print "Warning: empty manga"
+            self.page_list = EmptyPageList()
+
+    def change_chapter(self, path):
+        self.page_list.change_chapter(path)
+
+    def scroll_down(self, step=100):
+        self.page_list.scroll_down(step)
+    
+    def scroll_up(self, step=100):
+        self.page_list.scroll_up(step)
+
+    def move_cursor(self, amount):
+        self.page_list.move_cursor(amount)
+
+    def loaded_pages_count(self):
+        return self.page_list.loaded_pages_count()
+                
 class EmptyMangaError(Exception): pass
 class FetchError(Exception): pass
 
@@ -158,16 +202,18 @@ def paint_scroller(painter, scroller, count=3):
 
         @return number of frames rendered (so we know if we need to update)
     """
-    index = scroller.cursor_index()
-    pages = scroller.pages[index:index+count]
-    # setup loading parameters
-    # TODO: fix, should be viewing parameters? 
+    # First, load any unloaded image:
+    #   setup loading parameters
+    #   TODO: fix, should be viewing parameters? 
     max_width = painter.viewport().width()
-    size_kw = { 'max_width': max_width }
-    for page in pages:
+    size_kw = {'max_width': max_width}
+    for page in scroller.page_list.pages:
         page.load(**size_kw) # load page in background, if not already loaded
-    frames = [p.get_frame() for p in pages if p.is_loaded()]
-    y = -scroller.cursor_pixel
+    if scroller.page_list.loaded_pages_count() <= 0: return
+    index = scroller.page_list.index
+    pages = scroller.page_list.pages[index:index+count] # FIXME: hmm, why is the iteration built into the page list? maybe we should do it as a mapping from filenames to image/page objects
+    frames = [p.get_frame() for p in pages if p.is_loaded]
+    y = -scroller.page_list.cursor_pixel
     fstrip.paint_frames(painter, frames, y)
     return len(frames) 
 

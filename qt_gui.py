@@ -31,6 +31,7 @@ def load_frames(path):
 class MainWindow(QtGui.QMainWindow):
     def __init__(self, startdir):
         QtGui.QMainWindow.__init__(self, None)
+        self.current_manga_path = startdir
         self.scroller = mscroll.MangaScroller(startdir)
         self.step = 100
         self.big_step = 600
@@ -44,26 +45,27 @@ class MainWindow(QtGui.QMainWindow):
 
         self.timer = QtCore.QTimer()
         self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timerEvent)
-        self.timer.start(800) # number is msec
+        self.timer.start(80) # number is msec
 
         # toolbar = self.addToolBar('Manga')
         # toolbar.addAction(open)
         # toolbar.hide()
 
     def change_manga(self, path):
-        # TODO managa a repo of mangas or something so that when we go back 
+        # TODO manage a repo of mangas or something so that when we go back 
         # to another previous manga, we also restore the scroller object
         # or at least restore where the user was
+        self.current_manga_path = path
         self.scroller = mscroll.MangaScroller(path)
         self.repaint()
 
     def choose_manga(self):
-        dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Manga", os.path.join(self.scroller.fetcher.root, '..'))
+        dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Manga", os.path.join(self.current_manga_path, '..'))
         if not dir: return
         self.change_manga(unicode(dir))
 
     def choose_chapter(self):
-        dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Chapter", self.scroller.fetcher.root)
+        dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Chapter", self.current_manga_path)
         if not dir: return
         self.scroller.change_chapter(unicode(dir))
 
@@ -75,15 +77,18 @@ class MainWindow(QtGui.QMainWindow):
 
     def keyPressEvent(self, event):
         key = event.text()
-        if key == 'j':
+        qt_key = event.key()
+        if key == 'j' or qt_key == QtCore.Qt.Key_Down:
             self.scrollDown(self.step)
-        if key == 'k':
+        if key == 'k' or qt_key == QtCore.Qt.Key_Up:
             self.scrollUp(self.step)
-        if key == 'J':
+        if key == 'J' or qt_key == QtCore.Qt.Key_PageDown:
             self.scrollDown(self.big_step)
-        if key == 'K':
+        if key == 'K' or qt_key == QtCore.Qt.Key_PageUp:
             self.scrollUp(self.big_step)
-        if key == 'q':
+        if key == ' ':
+            self.scrollDown(self.big_step)
+        if key == 'q' or qt_key == QtCore.Qt.Key_Escape:
             QtGui.QApplication.instance().quit()
         if key == 'o':
             self.choose_manga()
@@ -98,13 +103,16 @@ class MainWindow(QtGui.QMainWindow):
         self.repaint()
 
     def paintEvent(self, event):
+        self.last_pages_count = self.scroller.loaded_pages_count()
         painter = QtGui.QPainter()
         painter.begin(self)
-        self.last_pages_count = mscroll.paint_scroller(painter, self.scroller)
+        mscroll.paint_scroller(painter, self.scroller)
         painter.end()
 
     def timerEvent(self):
         if self.scroller.loaded_pages_count() > self.last_pages_count:
+            print "Repainting .."
+            self.last_pages_count = self.scroller.loaded_pages_count()
             self.repaint()
 
 
