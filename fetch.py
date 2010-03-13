@@ -131,13 +131,14 @@ class DirListIterator(object):
             @note: if you set get_first_entry to get_last_entry, then you also have to set next_item to 'prev_item'
             @return: path to the item
         """
-        first = get_first_entry(entry)
-        if first is None:
-            return getattr(self, next_item)(entry.path)
-        elif first.isdir:
-            return self._get_first_item_recursive(first, get_first_entry, next_item)
-        else:
-            return first.path # base case
+        if not entry.isdir: 
+            return entry.path # base case, at the top, to allow passing a file as well!
+        else: # entry.isdir
+            first = get_first_entry(entry)
+            if first is None:
+                return getattr(self, next_item)(entry.path)
+            else:
+                return self._get_first_item_recursive(first, get_first_entry, next_item)
 
     def first_item(self):
         """returns the path to the first item (first leaf node(file)) in the directory tree, recursively"""
@@ -281,7 +282,8 @@ if os.name == 'posix':
 
 debug = True
 if debug and __name__ == '__main__':
-    it = DirListIterator('/home/hasenj/manga/')
+    it = DirListIterator('/home/hasenj/manga')
+    # it = DirListIterator('/home/hasenj/manga/sample')
     step_test(it)
 
 
