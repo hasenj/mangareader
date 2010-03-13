@@ -178,9 +178,10 @@ class DirListIterator(object):
         """
         print "iteration:", path
         path = self.relpath(path) # normalize to relative path
+        print "relpath:", path
         parent, name = os.path.split(path)
         entry = get_next_entry(self.get_entry(parent), name)
-        print "sibling is", entry.path
+        if entry: print "sibling is", entry.path
 
         while True:
             if entry is not None:
@@ -216,22 +217,21 @@ def path_parts(path):
     if parts and parts[-1] == '': parts = parts[:-1]
     return parts
 
-def _get_next_x_items(iterator, item, count, attr='next_item'):
+def _get_next_x_items(iterator, item, count, next_item='next_item'):
     """ get next (or previous) x items
         @param count: how many items to get. Note: not guaranteed to return exactly `count` items (e.g. if we're near the end/beginning of the list)
         @param filter: a function that takes a file path and return a boolean specifying if we should accept or reject this file
     """
     res = []
-    get_func = getattr(iterator, attr)
     for x in range(count):
-        item = get_func(item)
+        item = getattr(iterator, next_item)(item)
         if item is None: break # nothing more to get
         res.append(item)
     return res
 
 # Helper functions for getting the context around an item
 def get_next_x_items(iterator, item, count): return _get_next_x_items(iterator, item, count)
-def get_prev_x_items(iterator, item, count): return _get_next_x_items(iterator, item, count, attr='prev_item')
+def get_prev_x_items(iterator, item, count): return _get_next_x_items(iterator, item, count, next_item='prev_item')
 
 def get_context(iterator, item=None, prev_count=4, next_count=12):
     """Get the context around an a file -- used for making a partial view of the recursive file list
