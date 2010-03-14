@@ -150,7 +150,7 @@ class DirListIterator(object):
 
     def first_item_in(self, path):
         """returns the path to the first item inside a certain subdirectory"""
-        print "getting first in ", path
+        # print "getting first in ", path
         path = self.relpath(path)
         item = self._get_first_item_recursive(self.get_entry(path))
         if item is None: # means this directory was empty!
@@ -176,12 +176,12 @@ class DirListIterator(object):
 
             @returns: the absolute path of the item
         """
-        print "iteration:", path
+        # print "iteration:", path
         path = self.relpath(path) # normalize to relative path
-        print "relpath:", path
+        # print "relpath:", path
         parent, name = os.path.split(path)
         entry = get_next_entry(self.get_entry(parent), name)
-        if entry: print "sibling is", entry.path
+        # if entry: print "sibling is", entry.path
 
         while True:
             if entry is not None:

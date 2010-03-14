@@ -48,7 +48,6 @@ class Page(object):
 
             We'll know when the loader is done because it sets `self.loading = 2`
         """
-        print "size of", os.path.basename(self.path), "is" , max_width
         if self.loading > 0: return
         def image_loader(): # this will run in a background thread
             _frame = fstrip.create_frame(self.path)
@@ -56,8 +55,8 @@ class Page(object):
                 _frame = _frame.scaledToWidth(max_width, QtCore.Qt.SmoothTransformation)
             self.frame = _frame
             self.loading = 2
-            print "done loading", self.path
-        print "queueing:", self.path
+            # print "done loading", self.path
+        # print "queueing:", self.path
         self.loading = 1
         queue_image_loader(image_loader)
     @property
