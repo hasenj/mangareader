@@ -15,10 +15,14 @@
         list of images as the user scrolls up/down
 """    
 
-from mangareader import fetch, fstrip
-from mangareader.bgloader import queue_image_loader
+import itertools
+
 from PyQt4 import QtGui, QtCore
 
+from mangareader import fetch, fstrip
+from mangareader.bgloader import queue_image_loader
+
+import os.path
 
 class Page(object):
     def __init__(self, path):
@@ -44,6 +48,7 @@ class Page(object):
 
             We'll know when the loader is done because it sets `self.loading = 2`
         """
+        print "size of", os.path.basename(self.path), "is" , max_width
         if self.loading > 0: return
         def image_loader(): # this will run in a background thread
             _frame = fstrip.create_frame(self.path)
@@ -57,7 +62,6 @@ class Page(object):
         queue_image_loader(image_loader)
     @property
     def height(self):
-        self.load()
         if not self.is_loaded:
             return 800 # some weird default? :/
         return self.frame.rect().height()
@@ -66,35 +70,77 @@ class Page(object):
             return None
         return self.frame
 
+class ImageCache(object):
+    """A mapping from image path to page object, with caching
+
+        usage: first, initialize a cache
+               - you can add paths to the cache, and the images will be loaded
+               - you can remove paths (and the images will be removed)
+               - you can reset the cache with a list of paths, any loaded image not 
+                 in the new list will be removed, and new image will be loaded
+
+        TODO consider using the image width as an additional key
+
+        @note: the paths we deal with should always be absolute paths
+    """
+    def __init__(self):
+        self.map = {}
+
+    def get(self, path):
+        return self.map[path]
+
+    def contains(self, path):
+        return self.map.has_key(path)
+
+    def add(self, path):
+        if self.contains(path): return
+        page = Page(path)
+        self.map[path] = page
+        # page.load(max_width) # don't load yet ..
+    def remove(self, path):
+        del self.map[path]
+    def reset(self, path_list, max_width=None):
+        """remove paths not in path_list, load pages not already loaded"""
+        old_paths = set(self.map.keys()) - set(path_list)
+        for path in old_paths:
+            self.remove(path)
+        for path in path_list:
+            self.add(path)
+
 class PageList(object):
     def __init__(self, root):
         """ `root` is the manga root directory """
         self.iterator = fetch.iterator(root)
         self.pages = []
+        self.img_cache = ImageCache()
         self.reset_window(self.iterator.first_item())
         if len(self.pages) == 0:
-            raise EmptyMangaError
+            raise EmptyMangaException
         self.index = 0
         self.cursor_pixel = 0
 
     def loaded_pages_count(self):
         sum = 0
-        for page in self.pages:
+        for page in self.as_list():
             if page.is_loaded:
                 sum +=1
         return sum
 
+    def page(self, index):
+        """fake list of Page objects"""
+        return self.img_cache.get(self.pages[index])
+
+    def as_list(self):
+        """get a list of the pages we have"""
+        return map(self.page, range(len(self.pages)))
+
     @property
     def current_page(self):
-        return self.pages[self.index]
+        return self.page(self.index)
 
     def change_chapter(self, path):
         self.reset_window(path)
-        self.cursor_page = self.pages[0]
         self.cursor_pixel = 0
-
-    def cursor_index(self):
-        return self.pages.index(self.cursor_page)
 
     def scroll_down(self, step=100):
         self.move_cursor(step)
@@ -158,7 +204,8 @@ class PageList(object):
     def reset_window(self, path):
         """resets the view/window around the given file path"""
         list, index = fetch.get_context(self.iterator, path)
-        self.pages = [Page(i) for i in list]
+        self.pages = list
+        self.img_cache.reset(list)
         self.index = index
 
 class EmptyPageList(object):
@@ -168,12 +215,13 @@ class EmptyPageList(object):
     def scroll_down(self, step=0): pass
     def move_cursor(self, amount): pass
     def loaded_pages_count(self): return -1
+    def as_list(self): return []
 
 class MangaScroller(object):
     def __init__(self, root):
         try: 
             self.page_list = PageList(root)
-        except EmptyMangaError: 
+        except EmptyMangaException: 
             print "Warning: empty manga"
             self.page_list = EmptyPageList()
 
@@ -192,7 +240,7 @@ class MangaScroller(object):
     def loaded_pages_count(self):
         return self.page_list.loaded_pages_count()
                 
-class EmptyMangaError(Exception): pass
+class EmptyMangaException(Exception): pass
 class FetchError(Exception): pass
 
 def paint_scroller(painter, scroller, count=3):
@@ -205,12 +253,11 @@ def paint_scroller(painter, scroller, count=3):
     #   setup loading parameters
     #   TODO: fix, should be viewing parameters? 
     max_width = painter.viewport().width()
-    size_kw = {'max_width': max_width}
-    for page in scroller.page_list.pages:
-        page.load(**size_kw) # load page in background, if not already loaded
+    for page in scroller.page_list.as_list():
+        page.load(max_width=max_width) # load page in background, if not already loaded
     if scroller.page_list.loaded_pages_count() <= 0: return
     index = scroller.page_list.index
-    pages = scroller.page_list.pages[index:index+count] # FIXME: hmm, why is the iteration built into the page list? maybe we should do it as a mapping from filenames to image/page objects
+    pages = scroller.page_list.as_list()[index:index+count] # FIXME: hmm, why is the iteration built into the page list? maybe we should do it as a mapping from filenames to image/page objects
     frames = [p.get_frame() for p in pages if p.is_loaded]
     y = -scroller.page_list.cursor_pixel
     fstrip.paint_frames(painter, frames, y)

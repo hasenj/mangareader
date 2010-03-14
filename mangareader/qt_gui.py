@@ -106,7 +106,8 @@ class MainWindow(QtGui.QMainWindow):
         self.last_pages_count = self.scroller.loaded_pages_count()
         painter = QtGui.QPainter()
         painter.begin(self)
-        mscroll.paint_scroller(painter, self.scroller)
+        try: mscroll.paint_scroller(painter, self.scroller)
+        except: print "error in painting"
         painter.end()
 
     def timerEvent(self):
