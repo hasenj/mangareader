@@ -9,9 +9,9 @@
 """
 import os
 
-main = 'qt_gui.py'
-dest = 'mangareader'
-version = '0.0.5.x'
+main = 'manga'
+dest = 'dist_nt'
+version = '0.0.2.x'
 dest_7z = 'mangareader_v%s.7z' % version
 
 def do_exe():
@@ -21,11 +21,11 @@ def do_exe():
                 )], 
         options=dict(
             py2exe=dict(
-                optimize=2, 
+                optimize=3, 
                 includes=['sip'],
                 compressed=True, 
                 dist_dir=dest,
-                bundle_files=1
+                bundle_files=2
                 )),
         data_files = [ 
             ('art', ['art/icon.png']),
@@ -42,6 +42,7 @@ os.system("rm -rf " + dest)  # clean previous build
 do_exe()                     # call py2exe
 os.system("git checkout-index -a -f --prefix=" + dest + "/src/") # add source code to build directory (because we're gpl)
 
+os.system("rm " + dest_7z) # remove previous 7z file (if any)
 os.system("7z a " + dest_7z + " " + dest) # create an archive suitable for distribution
 os.system("rm -rf build")    # clean intermediate build files
 
