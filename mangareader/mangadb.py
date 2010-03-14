@@ -36,13 +36,8 @@ def get_config_file_path():
     """Get the location of the config file """
     if os.name == 'posix':
         return os.path.expanduser('~')
-    elif os.name == 'nt': # windows ...
-        try:
-            from win32com.shell import shellcon, shell
-        except:
-            print "Warning: win32com is required for remembering stuff"
-            return ''
-        return shell.SHGetFolderPath(0, shellcon.CSIDL_APPDATA, 0, 0)
+    elif os.name == 'nt': # windows
+        return os.environ['APPDATA']
         
 from configobj import ConfigObj as conf
 
