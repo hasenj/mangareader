@@ -15,9 +15,8 @@
         list of images as the user scrolls up/down
 """    
 
-import fstrip
-import fetch
-from bgloader import queue_image_loader
+from mangareader import fetch, fstrip
+from mangareader.bgloader import queue_image_loader
 from PyQt4 import QtGui, QtCore
 
 

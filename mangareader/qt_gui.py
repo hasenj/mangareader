@@ -6,15 +6,15 @@
     Qt based graphical user interface for the manga reader
 """
 
-
 # system imports
 import os
 import sys
+
 # Qt imports
 from PyQt4 import QtGui, QtCore
+
 # Project imports
-import fstrip
-import mscroll
+from mangareader import fstrip, mscroll
 
 if os.name == 'posix':
     test_path = "/home/hasenj/manga/sample/"
