@@ -32,18 +32,24 @@ class ITree(object):
         object to be able to retrive a node's parent and siblings
     """
     @property
+    def root(self):
+        """get the root node in the tree"""
+        raise NotImplemented
+
     def parent(self, node):
         """get the parent node. returns None for the root node"""
         raise NotImplemented
 
-    @property
     def sibling_next(self, node):
-        """get the next sibling node (moving forward) returns None if it's the last node relative to its parent"""
+        """get the next sibling node (moving forward)
+            returns None if it's the last node relative to its parent
+        """
         raise NotImplemented
 
-    @property
     def sibling_prev(self, node):
-        """get the previous sibling node (moving back) returns None if it's the first node relative to its parent"""
+        """get the previous sibling node (moving back) 
+            returns None if it's the first node relative to its parent
+        """
         raise NotImplemented
 
 
