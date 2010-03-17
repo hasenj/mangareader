@@ -122,3 +122,4 @@ def step(tree, node, dir='next'):
         else: # empty directory
             return start_from(node)
 
+

@@ -14,15 +14,15 @@ class FakeNode(object):
     def __init__(self, name, children=None):
         self.name = name
         self.parent = None
-        if children:
+        if children is None:
+            self.isdir = False
+            self.isfile = True
+        else:
             self.isdir = True
             self.isfile = False
             self.ls = children
             for node in self.ls:
                 node.parent = self # the tree can be dumb! we manage our own children
-        else:
-            self.isdir = False
-            self.isfile = True
     def __repr__(self):
         return "[node \"%s\"]" % self.name
 
@@ -88,6 +88,112 @@ class TestBasicWalking(unittest.TestCase):
             node = step(tree, node, dir='back')
             self.assertEqual(node.name, name)
         self.assertTrue(step(tree, node, dir='back') is None)
+
+class TestWalkingWithSomeEmptyNodes(TestBasicWalking):
+    def setUp(self):
+        self.basic_tree = FakeTree(
+            FakeNode( # root
+                name = 'root',
+                children = [
+                    FakeNode(name='ch01', 
+                        children = [
+                            FakeNode(name='01'),
+                            FakeNode(name='02'),
+                            FakeNode(name='empty1', children=[]),
+                            FakeNode(name='03'),
+                            FakeNode(name='04'),
+                            FakeNode(name='05'),
+                                   ]
+                                ),
+                    FakeNode(name='empty2', children=[]),
+                    FakeNode(name='ch02', 
+                        children = [
+                            FakeNode(name='06'),
+                            FakeNode(name='07'),
+                            FakeNode(name='08'),
+                            FakeNode(name='09'),
+                            FakeNode(name='10'),
+                                   ]
+                                ),
+                           ]
+                    )
+        )
+
+class TestWalkingWithSomeEmptyAndNestedNodes(TestBasicWalking):
+    def setUp(self):
+        self.basic_tree = FakeTree(
+            FakeNode( # root
+                name = 'root',
+                children = [
+                    FakeNode(name='ch01', 
+                        children = [
+                            FakeNode('ch01.2', 
+                                children = [
+                                FakeNode(name='01'),
+                                    ]),
+                            FakeNode(name='02'),
+                            FakeNode(name='empty1', children=[]),
+                            FakeNode(name='03'),
+                            FakeNode(name='04'),
+                            FakeNode(name='05'),
+                                   ]
+                                ),
+                    FakeNode(name='empty2', children=[]),
+                    FakeNode(name='ch02', 
+                        children = [
+                            FakeNode(name='06'),
+                            FakeNode(name='07'),
+                            FakeNode(name='08'),
+                            FakeNode(name='09'),
+                            FakeNode(name='10'),
+                                   ]
+                                ),
+                           ]
+                    )
+        )
+
+class TestWalkingWithDeeplyNestedNodes(TestBasicWalking):
+    def setUp(self):
+        self.basic_tree = FakeTree(
+            FakeNode( # root
+                name = 'root',
+                children = [
+                    FakeNode(name='ch01', 
+                        children = [
+                            FakeNode('ch01.2', 
+                                children = [
+                                FakeNode(name='01'),
+                                    ]),
+                            FakeNode(name='02'),
+                            FakeNode(name='03'),
+                            FakeNode(name='04'),
+                            FakeNode(name='05'),
+                                   ]
+                                ),
+                    FakeNode(name='empty2', children=[]),
+                    FakeNode(name='ch02', 
+                        children = [
+                            FakeNode(name='06'),
+                            FakeNode(name='07'),
+                            FakeNode(name='08'),
+                            FakeNode(name='09'),
+                            FakeNode(name='level1',
+                                children=[
+                                    FakeNode(name='level2', 
+                                        children=[
+                                            FakeNode(name='level3',
+                                                children=[
+                                                    FakeNode(name='10'),
+                                                         ])
+
+                                                 ])
+                                          ])
+                                   ]
+                                ),
+                           ]
+                    )
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
