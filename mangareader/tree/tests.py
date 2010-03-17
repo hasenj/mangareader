@@ -79,7 +79,6 @@ class TestBasicWalking(unittest.TestCase):
         node = tree.root
         for name in ('01', '02', '03', '04', '05', '06', '07', '08', '09', '10'):
             node = step(tree, node)
-            print node
             self.assertEqual(node.name, name)
         self.assertTrue(step(tree, node) is None)
 

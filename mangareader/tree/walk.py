@@ -99,8 +99,9 @@ def step(tree, node, dir='next'):
     def handle_sibling_is_none(node):
         assert get_sibling(node) is None
         root = tree.root
-        while node is not root:
-            node = tree.get_parent(node)
+        while True:
+            node = tree.parent(node)
+            if node is root: break
             sibling = get_sibling(node)
             if sibling is not None:
                 return handle_sibling_exists(sibling)
@@ -108,7 +109,7 @@ def step(tree, node, dir='next'):
         return None
 
     if node.isfile:
-        start_from(node)
+        return start_from(node)
     else: # node.isdir
         if node.ls: # non-empty directory
             first_child = node.ls[0]
@@ -117,5 +118,5 @@ def step(tree, node, dir='next'):
             else: # also a directory? recurse
                 return step(tree, node.ls[0], dir) # start from first child
         else: # empty directory
-            start_from(node)
+            return start_from(node)
 

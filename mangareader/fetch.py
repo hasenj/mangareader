@@ -10,6 +10,8 @@
         - Sometimes things can be confusing: are we passing a path or a directory entry? so:
             item: means the file path
             entry: means the DirEntry object
+
+    TODO: getting the parent of a DirEntry in the iterator is a confusing operation: make a method for it
 """
 
 import os
@@ -76,18 +78,21 @@ class DirEntry(object):
         type = "dir " if self.isdir else "file"
         return "[%s] %s" % (type, self.name) 
 
-def get_offset_entry(entry, name, offset):
+def _get_offset_entry(parent_entry, child_entry, offset):
     """Get an entry that's `offset` steps apart from the item with `name` in the DirEntry `entry`"""
-    index = entry.get_entry_index(name)
-    ls = entry.ls
+    name = child_entry.name
+    index = parent_entry.get_entry_index(name)
+    ls = parent_entry.ls
     if 0 <= index+offset < len(ls):
         return ls[index+offset]
     else:
         return None
 
 # kind of low level functions ..
-def get_next_entry(entry, name): return get_offset_entry(entry, name, 1)        
-def get_prev_entry(entry, name): return get_offset_entry(entry, name, -1)        
+def get_next_entry(parent_entry, child_entry):
+    return _get_offset_entry(parent_entry, child_entry, 1)        
+def get_prev_entry(parent_entry, child_entry):
+    return _get_offset_entry(parent_entry, child_entry, -1)        
 
 def get_first_entry(entry): 
     if len(entry.ls): return entry.ls[0]
@@ -179,8 +184,9 @@ class DirListIterator(object):
         # print "iteration:", path
         path = self.relpath(path) # normalize to relative path
         # print "relpath:", path
-        parent, name = os.path.split(path)
-        entry = get_next_entry(self.get_entry(parent), name)
+        entry = self.get_entry(path)
+        parent = self.get_parent_entry(entry)
+        entry = self.get_sibling_entry(entry, get_next_entry=get_next_entry)
         # if entry: print "sibling is", entry.path
 
         while True:
@@ -190,14 +196,13 @@ class DirListIterator(object):
                 if result is not None:
                     return result # here we return .. with the path
                 path = self.relpath(entry.path) # hmm, this is kinda bad, having to remember to call relpath everytime we alter `path`
-                parent, name = os.path.split(path) # go up a level and try our sibling
-                entry = self.get_entry(parent)
-                entry = get_next_entry(entry, name) # parent's sibling
+                # go up a level and try our sibling
+                entry = self.get_sibling_entry(parent, get_next_entry=get_next_entry)
             if entry is None:
-                if parent in ('', '/'): # we're at the very end, nothing more!!
+                if parent.path in ('', '/', '.'): # we're at the very end, nothing more!!
                     return None
-                parent, name = os.path.split(parent) # this level is done, go up
-                entry = get_next_entry(self.get_entry(parent), name)
+                # this level is done, go up
+                entry = self.get_sibling_entry(parent, get_next_entry=get_next_entry)
 
     def get_entry(self, path):
         """Get the entry for the given path, and use a cache; path must be a relative path"""
@@ -209,6 +214,21 @@ class DirListIterator(object):
             entry = entry.get_entry(part)
         self.cache[path] = entry
         return entry
+
+    def get_parent_entry(self, entry):
+        """Get the parent entry for this entry within the root dir_entry"""
+        path = entry.path
+        path = self.relpath(path)
+        parent, name = os.path.split(path)
+        return self.get_entry(parent)
+
+    def get_sibling_entry(self, entry, get_next_entry=get_next_entry):
+        """Finds the sibling for the entry in the directory tree
+        @param get_next_entry: the function for getting the sibling (used so the same function can get next/prev sibling
+        """
+        parent = self.get_parent_entry(entry)
+        sibling = get_next_entry(parent, entry)
+        return sibling
 
 def path_parts(path):
     path.replace('\\', '/')
@@ -279,6 +299,7 @@ if os.name == 'posix':
             if c == 'j': item = iterator.next_item(item)
             if c == 'k': item = iterator.prev_item(item)
             if '0' <= c <= '9': item = iterator.first_item_in(iterator.dir_entry.ls[int(c)].path) # start from the nth directory (simulate jumping to a chapter)
+        print "broke out of loop!"
 
 debug = True
 if debug and __name__ == '__main__':
