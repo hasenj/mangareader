@@ -78,8 +78,10 @@ def step(tree, node, dir='next'):
     """
     if dir in ('next', 'forward', 'for', 1):
         get_sibling = tree.sibling_next
+        first_item = lambda list: list[0]
     elif dir in ('prev', 'previous', 'backwards', 'backward', 'back', -1):
         get_sibling = tree.sibling_prev
+        first_item = lambda list: list[-1] # last item!
     else:
         raise ValueException("given value for `dir` is invalid")
 
@@ -112,11 +114,11 @@ def step(tree, node, dir='next'):
         return start_from(node)
     else: # node.isdir
         if node.ls: # non-empty directory
-            first_child = node.ls[0]
+            first_child = first_item(node.ls)
             if first_child.isfile:
                 return first_child
             else: # also a directory? recurse
-                return step(tree, node.ls[0], dir) # start from first child
+                return step(tree, first_child, dir) # start from first child
         else: # empty directory
             return start_from(node)
 

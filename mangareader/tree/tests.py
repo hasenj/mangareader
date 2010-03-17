@@ -46,7 +46,6 @@ class FakeTree(object):
 
 
 class TestBasicWalking(unittest.TestCase):
-
     def setUp(self):
         self.basic_tree = FakeTree(
             FakeNode( # root
@@ -74,13 +73,21 @@ class TestBasicWalking(unittest.TestCase):
                     )
         )
 
-    def test_stepping(self):
+    def test_stepping_forward(self):
         tree = self.basic_tree
         node = tree.root
-        for name in ('01', '02', '03', '04', '05', '06', '07', '08', '09', '10'):
+        for name in (str(i).zfill(2) for i in range(1, 11)): # 01 ... 10 (inclusive)
             node = step(tree, node)
             self.assertEqual(node.name, name)
         self.assertTrue(step(tree, node) is None)
+
+    def test_stepping_backward(self):
+        tree = self.basic_tree
+        node = tree.root
+        for name in (str(i).zfill(2) for i in range(10, 0, -1)): # 10 ... 01 (inclusive)
+            node = step(tree, node, dir='back')
+            self.assertEqual(node.name, name)
+        self.assertTrue(step(tree, node, dir='back') is None)
 
 if __name__ == '__main__':
     unittest.main()
