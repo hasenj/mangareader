@@ -72,7 +72,7 @@ def step(tree, node, dir='next'):
         e.g.:
             # walk starting from root
             node = tree.root_node
-            while next is not None:
+            while node is not None:
                 # do something with node
                 node = step(tree, node, 'next')
     """
