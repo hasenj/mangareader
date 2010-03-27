@@ -7,6 +7,7 @@
 
 import unittest
 from mangareader.tree.walk import step
+from mangareader.tree.view import context
 
 # mockup classes
 
@@ -194,6 +195,58 @@ class TestWalkingWithDeeplyNestedNodes(TestBasicWalking):
                     )
         )
 
+class TestContextWithDeeplyNestedNodes(unittest.TestCase):
+    def setUp(self):
+        node6 = FakeNode(name='06')
+        self.current_node = node6
+        self.basic_tree = FakeTree(
+            FakeNode( # root
+                name = 'root',
+                children = [
+                    FakeNode(name='ch01', 
+                        children = [
+                            FakeNode('ch01.2', 
+                                children = [
+                                FakeNode(name='01'),
+                                    ]),
+                            FakeNode(name='02'),
+                            FakeNode(name='03'),
+                            FakeNode(name='04'),
+                            FakeNode(name='05'),
+                                   ]
+                                ),
+                    FakeNode(name='empty2', children=[]),
+                    FakeNode(name='ch02', 
+                        children = [
+                            node6,
+                            FakeNode(name='07'),
+                            FakeNode(name='08'),
+                            FakeNode(name='09'),
+                            FakeNode(name='level1',
+                                children=[
+                                    FakeNode(name='level2', 
+                                        children=[
+                                            FakeNode(name='level3',
+                                                children=[
+                                                    FakeNode(name='10'),
+                                                         ])
+
+                                                 ])
+                                          ])
+                                   ]
+                                ),
+                           ]
+                    )
+        )
+    
+    def test_context(self):
+        node_context = context(self.basic_tree, self.current_node, items_before=2, items_after=3)
+        # assert (4, 5, [6], 7, 8, 9)
+        expected_context = ('04', '05', '06', '07', '08', '09')
+        for index, item in enumerate(node_context):
+            a = item.name
+            b = expected_context[index]
+            self.assertEqual(a, b)
 
 if __name__ == '__main__':
     unittest.main()
