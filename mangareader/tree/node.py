@@ -39,25 +39,3 @@ class ITree(object):
     def parent(self, node):
         """get the parent node. returns None for the root node"""
         raise NotImplemented
-
-    def sibling_next(self, node):
-        """get the next sibling node (moving forward)
-            returns None if it's the last node relative to its parent
-        """
-        raise NotImplemented
-
-    def sibling_prev(self, node):
-        """get the previous sibling node (moving back) 
-            returns None if it's the first node relative to its parent
-        """
-        raise NotImplemented
-
-def std_sibling(parent, node, offset):
-    """Get the sibling of the node that's offset steps away"""
-    index = parent.ls.index(node)
-    sibdex = index + offset
-    if 0 <= sibdex < len(parent.ls):
-        return parent.ls[sibdex]
-    else:
-        return None
-

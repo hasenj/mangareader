@@ -77,16 +77,16 @@ def step(tree, node, dir='next'):
                 node = step(tree, node, 'next')
     """
     if dir in ('next', 'forward', 'for', 1):
-        get_sibling = tree.sibling_next
+        get_sibling = sibling_next
         first_item = lambda list: list[0]
     elif dir in ('prev', 'previous', 'backwards', 'backward', 'back', -1):
-        get_sibling = tree.sibling_prev
+        get_sibling = sibling_prev
         first_item = lambda list: list[-1] # last item!
     else:
         raise ValueException("given value for `dir` is invalid")
 
     def start_from(node):
-        sibling = get_sibling(node)
+        sibling = get_sibling(tree, node)
         if sibling is not None: # happy case
             return handle_sibling_exists(sibling)
         else: # sibling is none .. not so happy
@@ -99,12 +99,12 @@ def step(tree, node, dir='next'):
             return step(tree, sibling, dir)
 
     def handle_sibling_is_none(node):
-        assert get_sibling(node) is None
+        assert get_sibling(tree, node) is None
         root = tree.root
         while True:
             node = tree.parent(node)
             if node is root: break
-            sibling = get_sibling(node)
+            sibling = get_sibling(tree, node)
             if sibling is not None:
                 return handle_sibling_exists(sibling)
         # we reached the very end! that's it
@@ -121,4 +121,16 @@ def step(tree, node, dir='next'):
                 return step(tree, first_child, dir) # start from first child
         else: # empty directory
             return start_from(node)
+
+def node_sibling(parent, node, offset):
+    """Get the sibling of the node that's offset steps away"""
+    index = parent.ls.index(node)
+    sibdex = index + offset
+    if 0 <= sibdex < len(parent.ls):
+        return parent.ls[sibdex]
+    else:
+        return None
+
+def sibling_next(tree, node): return node_sibling(tree.parent(node), node, 1)
+def sibling_prev(tree, node): return node_sibling(tree.parent(node), node, -1)
 
