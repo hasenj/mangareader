@@ -2,16 +2,16 @@
     Author: Hasen "hasenj" il Judy
     License: GPL v2
 
-    This module provides the functionality for recursively iterating directory content
+    This module provides the interface for recursively iterating directory tree
     in an effecient way that doesn't block when the directory is huge and messy
+
+    The actual functionality is provided in mangareader.tree.walk
 
     Terminology notes:
 
         - Sometimes things can be confusing: are we passing a path or a directory node? so:
             item: means the file path
             node: means the DirNode object
-
-    TODO: getting the parent of a DirNode in the iterator is a confusing operation: make a method for it
 """
 
 import os
@@ -119,6 +119,7 @@ class DirTree(object):
 
     def get_node(self, path):
         """Get the node for the given path, and use a cache; path must be a relative path"""
+        path = self.relpath(path)
         if self.cache.has_key(path):
             return self.cache.get(path)
         # first time we see this, let's find it and remember it

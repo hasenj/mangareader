@@ -20,6 +20,8 @@ import itertools
 from PyQt4 import QtGui, QtCore
 
 from mangareader import fetch, fstrip
+from mangareader.tree.walk import step as walk_step
+from mangareader.tree.view import context as view_context
 from mangareader.bgloader import queue_image_loader
 
 import os.path
@@ -98,7 +100,7 @@ class ImageCache(object):
         # page.load(max_width) # don't load yet ..
     def remove(self, path):
         del self.map[path]
-    def reset(self, path_list, max_width=None):
+    def reset(self, path_list):
         """remove paths not in path_list, load pages not already loaded"""
         old_paths = set(self.map.keys()) - set(path_list)
         for path in old_paths:
@@ -109,11 +111,12 @@ class ImageCache(object):
 class PageList(object):
     def __init__(self, root):
         """ `root` is the manga root directory """
-        self.iterator = fetch.iterator(root)
-        self.pages = []
+        self.tree = fetch.DirTree(root)
+        self.nodes = []
         self.img_cache = ImageCache()
-        self.reset_window(self.iterator.first_item())
-        if len(self.pages) == 0:
+        first_node = walk_step(self.tree, self.tree.root)
+        self.reset_window(first_node)
+        if len(self.nodes) == 0:
             raise EmptyMangaException
         self.index = 0
         self.cursor_pixel = 0
@@ -127,18 +130,23 @@ class PageList(object):
 
     def page(self, index):
         """fake list of Page objects"""
-        return self.img_cache.get(self.pages[index])
+        return self.img_cache.get(self.page_path(index))
+
+    def page_path(self, index):
+        return self.nodes[index].path
 
     def as_list(self):
         """get a list of the pages we have"""
-        return map(self.page, range(len(self.pages)))
+        return map(self.page, range(len(self.nodes)))
 
     @property
     def current_page(self):
         return self.page(self.index)
 
     def change_chapter(self, path):
-        self.reset_window(path)
+        chapter_node = self.tree.get_node(path)
+        first_node = walk_step(self.tree, chapter_node)
+        self.reset_window(first_node)
         self.cursor_pixel = 0
 
     def scroll_down(self, step=100):
@@ -149,7 +157,6 @@ class PageList(object):
 
     def move_cursor(self, amount):
         # amount is in pixels
-        # TODO: user cue for trying to overstep boundaries
         self.cursor_pixel += amount
         # read: if
         while self.cursor_pixel < 0: # we're moving backwards
@@ -163,7 +170,7 @@ class PageList(object):
                 self.cursor_pixel = 0
                 break # really?
             self.cursor_pixel += self.current_page.height
-        # read: if
+        # read: if (elif?)
         while self.cursor_pixel > self.current_page.height:
             if not self.current_page.is_loaded:  # don't proceed if page is not loaded (we don't know its height)
                 print "Breaking out -- page is not loaded yet!! (forward)"
@@ -184,32 +191,27 @@ class PageList(object):
         """
         if steps not in (1, -1):
             raise Exception("stepping move than one step is not supported")
-        if steps == 1:
-            if self.index + 2 < len(self.pages): # don't need to move window
-                self.index += 1
-                return True
-            newpath = self.iterator.next_item(self.current_page.path)
-        elif steps == -1:
-            if self.index > 0: # don't need to move window
-                self.index -= 1
-                return True
-            newpath = self.iterator.prev_item(self.current_page.path)
-        # if we get here, we needed to move window
-        if newpath is None: # we're at the edges!!
-            return False # not ok
-        self.reset_window(newpath)
+        if self.index < 2 or self.index + 2 > len(self.nodes):
+            self.reset_window()
+        new_index = self.index + steps
+        if new_index not in range(0, len(self.nodes)):
+            return False
+        self.index = new_index
         return True # ok
 
-    def reset_window(self, path):
-        """resets the view/window around the given file path"""
-        list, index = fetch.get_context(self.iterator, path)
-        self.pages = list
-        self.img_cache.reset(list)
+    def reset_window(self, node=None):
+        """resets the view/window around the current file path"""
+        if node is None: node = self.nodes[self.index]
+        list = view_context(self.tree, node)
+        index = list.index(node)
+        self.nodes = list
         self.index = index
+        path_list = [node.path for node in self.nodes]
+        self.img_cache.reset(path_list)
 
 class EmptyPageList(object):
     def __init__(self):
-        self.pages = []
+        self.nodes = []
     def scroll_up(self, step=0): pass
     def scroll_down(self, step=0): pass
     def move_cursor(self, amount): pass
