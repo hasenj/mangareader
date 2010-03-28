@@ -52,5 +52,12 @@ class ITree(object):
         """
         raise NotImplemented
 
-
+def std_sibling(parent, node, offset):
+    """Get the sibling of the node that's offset steps away"""
+    index = parent.ls.index(node)
+    sibdex = index + offset
+    if 0 <= sibdex < len(parent.ls):
+        return parent.ls[sibdex]
+    else:
+        return None
 

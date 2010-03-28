@@ -8,6 +8,7 @@
 import unittest
 from mangareader.tree.walk import step
 from mangareader.tree.view import context
+from mangareader.tree import node as tree_node
 
 # mockup classes
 
@@ -32,18 +33,10 @@ class FakeTree(object):
         self.root = root
     def parent(self, node):
         return node.parent
-    def _sibling(self, node, offset):
-        parent = self.parent(node)
-        index = parent.ls.index(node)
-        sibdex = index + offset
-        if 0 <= sibdex < len(parent.ls):
-            return parent.ls[sibdex]
-        else:
-            return None
     def sibling_next(self, node):
-        return self._sibling(node, 1)
+        return tree_node.std_sibling(self.parent(node), node, 1)
     def sibling_prev(self, node):
-        return self._sibling(node, -1)
+        return tree_node.std_sibling(self.parent(node), node, -1)
 
 
 class TestBasicWalking(unittest.TestCase):
