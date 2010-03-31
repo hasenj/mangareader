@@ -1,0 +1,18 @@
+Description:
+============
+
+    Read your manga by scrolling images, much like you scroll pages in pdf/ps/djvw documents.
+
+    I don't know how people usually read their manga, but the way manga is packaged, with each chapter in its own directory, people tend to 
+
+    * extract each chapter to a directory 
+    * keep a file browser open, 
+    * go into a directory, 
+       * open the first image in whatever image viewer they have
+       * keep hitting next to read the next page
+       * go back to the file browser
+       * go up a directory
+       * move to the next chapter
+       * repeat
+
+
