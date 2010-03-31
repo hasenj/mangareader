@@ -17,16 +17,9 @@ from PyQt4 import QtGui, QtCore
 from mangareader import fstrip, mscroll
 
 if os.name == 'posix':
-    test_path = "/home/hasenj/manga/sample/"
+    test_path = "/home/hasenj/manga/sample/" # TEMP
 elif os.name == 'nt':
-    test_path = "C:\manga\sample\\"
-
-def load_frames(path):
-    for file in sorted(os.listdir(path)):
-        _, ext = os.path.splitext(file)
-        if ext in ['.png', '.jpg', '.jpeg']:
-            image_path = os.path.join(path, file)
-            yield fstrip.create_frame(image_path, 800)
+    test_path = "C:\manga\sample\\" # TEMP
 
 class MainWindow(QtGui.QMainWindow):
     def __init__(self, startdir):
@@ -112,7 +105,6 @@ class MainWindow(QtGui.QMainWindow):
 
     def timerEvent(self):
         if self.scroller.loaded_pages_count() > self.last_pages_count:
-            # print "Repainting .."
             self.last_pages_count = self.scroller.loaded_pages_count()
             self.repaint()
 
@@ -126,13 +118,13 @@ def main():
         startdir = test_path
         if not os.path.exists(startdir):
             startdir = ''
-    app = QtGui.QApplication(sys.argv)
+    qapp = QtGui.QApplication(sys.argv)
     window = MainWindow(startdir)
     window.resize(1000, 800)
     window.setWindowTitle("Manga Reader")
     window.setWindowIcon(QtGui.QIcon('art/icon.png'))
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(qapp.exec_())
 
 if __name__ == '__main__':
     main()

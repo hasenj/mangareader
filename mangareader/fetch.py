@@ -94,8 +94,6 @@ class InvalidEntryName(Exception):
     def __init__(self, node, name):
         print "asked for %s from %s" % (name, node.path)
 
-# ---------------- iteration instead of fetching ---- (test)
-
 class DirTree(object):
     """The directory tree is used for the root directory of the manga"""
     def __init__(self, root_path):

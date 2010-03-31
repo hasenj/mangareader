@@ -44,7 +44,7 @@
                      +--+--+
              ......  |  |  |
                      @ [@] @
-                           ^
+                     ^      
         * last file in a last dir but not the very last
 
                     o                  
