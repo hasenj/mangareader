@@ -15,20 +15,22 @@ Description:
     reads by scrolling down (and up); much like reading a pdf document.
 
     The application will feature some concepts from vim, such as keyboard
-    interaction and a command bar.
+    interaction, a command bar, remembering history, etc.
     
     Main features should be accessible both through keyboard commands and
-    graphical elements, such as drop boxes, sliders, etc.
+    graphical elements (gui).
 
 Minimum Requirements:
     * Read (and display) images recursively from a manga directory. [done]
         * Must be lazy; don't read entire directory tree at once. [done]
     * Scroll up/down using k/j keys and mouse wheel. [done]
-    * Jump to a certain chapter, or volume/chapter. [wip]
+    * Jump to a certain chapter, or volume/chapter. [done]
 
 Medium Level Requirements:    
-    * Open a command bar when user hits : key.
-    * Set width (of film strip (the space allocated for displaying the manga)) using percentage or pixel values. Also provide a GUI slider for it.
-    * Save/load manga information, such as manga folder and where the user was last time.
+    * Treat zip archives as directories
+        * And support as many other formats as possible (rar, 7z, etc..) with priority given to FOSS formats.
+    * Save/load manga information, such as manga folder and where the user was last time. [wip]
     * Implement bookmarks: allow the user to bookmark a location and jump to it later.
+    * Open a command bar when user hits : key.
+    * Allow user to resize view (e.g. based on window width)
 
