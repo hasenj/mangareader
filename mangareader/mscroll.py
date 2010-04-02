@@ -115,7 +115,7 @@ class PageList(object):
         self.nodes = []
         self.img_cache = ImageCache()
         first_node = walk_step(self.tree, self.tree.root)
-        self.reset_window(first_node)
+        self._reset_window(first_node)
         if len(self.nodes) == 0:
             raise EmptyMangaException
         self.index = 0
@@ -146,7 +146,7 @@ class PageList(object):
     def change_chapter(self, path):
         chapter_node = self.tree.get_node(path)
         first_node = walk_step(self.tree, chapter_node)
-        self.reset_window(first_node)
+        self._reset_window(first_node)
         self.cursor_pixel = 0
 
     def scroll_down(self, step=100):
@@ -191,15 +191,14 @@ class PageList(object):
         """
         if steps not in (1, -1):
             raise Exception("stepping move than one step is not supported")
-        if self.index < 2 or self.index + 2 > len(self.nodes):
-            self.reset_window()
+        self._check_reset_window()
         new_index = self.index + steps
         if new_index not in range(0, len(self.nodes)):
             return False
         self.index = new_index
         return True # ok
 
-    def reset_window(self, node=None):
+    def _reset_window(self, node=None):
         """resets the view/window around the current file path"""
         if node is None: node = self.nodes[self.index]
         list = view_context(self.tree, node)
@@ -208,6 +207,13 @@ class PageList(object):
         self.index = index
         path_list = [node.path for node in self.nodes]
         self.img_cache.reset(path_list)
+
+    def _check_reset_window(self):
+        """check if we should reset window, and do it!"""
+        if len(self.nodes) < 6: return # don't even bother, 
+        if self.index < 2 or self.index + 4 > len(self.nodes):
+            print "resetting!"
+            self._reset_window()
 
 class EmptyPageList(object):
     def __init__(self):
