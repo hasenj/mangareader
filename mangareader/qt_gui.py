@@ -12,10 +12,8 @@ import sys
 # Qt imports
 from PyQt4 import QtGui, QtCore
 
-# Project imports
-from mangareader import fstrip, mscroll
-
 # widget imports
+from mangareader.widgets import fstrip, mscroll
 from widgets.manga_frame import MangaFrame
 
 # XXX This should go away, right after we implement remembering manga location
