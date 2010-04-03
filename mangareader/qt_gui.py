@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
     Author: Hasen "hasenj" il Judy
     License: GPL v2
@@ -16,6 +15,7 @@ from PyQt4 import QtGui, QtCore
 # Project imports
 from mangareader import fstrip, mscroll
 
+# XXX This should go away, right after we implement remembering manga location
 if os.name == 'posix':
     test_path = "/home/hasenj/manga/sample/" # TEMP
 elif os.name == 'nt':
@@ -45,9 +45,8 @@ class MainWindow(QtGui.QMainWindow):
         # toolbar.hide()
 
     def change_manga(self, path):
-        # TODO manage a repo of mangas or something so that when we go back 
-        # to another previous manga, we also restore the scroller object
-        # or at least restore where the user was
+        # TODO remember where we were last time we were reading this mange
+        # and restore to the same place
         self.current_manga_path = path
         self.scroller = mscroll.MangaScroller(path)
         self.repaint()
