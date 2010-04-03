@@ -26,12 +26,16 @@ elif os.name == 'nt':
 g_step = 30
 g_big_step = 600
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QtGui.QWidget):
     def __init__(self, startdir):
         QtGui.QMainWindow.__init__(self, None)
-        self.current_manga_path = startdir
+        self.current_manga_path = startdir # for use in the open folder dialoge
         self.manga_frame = MangaFrame(startdir)
-        self.setCentralWidget(self.manga_frame)
+
+        vbox_container = QtGui.QVBoxLayout()
+        vbox_container.addWidget(self.manga_frame)
+
+        self.setLayout(vbox_container)
 
     def choose_manga(self):
         dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Manga", os.path.join(self.current_manga_path, '..'))
