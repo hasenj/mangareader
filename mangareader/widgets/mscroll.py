@@ -19,7 +19,8 @@ import itertools
 
 from PyQt4 import QtGui, QtCore
 
-from mangareader import fetch, fstrip
+from mangareader import fetch
+from mangareader.widgets import fstrip
 from mangareader.tree.walk import step as walk_step
 from mangareader.tree.view import context as view_context
 from mangareader.bgloader import queue_image_loader

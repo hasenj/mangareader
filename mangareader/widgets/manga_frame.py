@@ -9,7 +9,7 @@
 from PyQt4 import QtGui, QtCore
 
 # Project imports
-from mangareader import fstrip, mscroll
+from mangareader.widgets import fstrip, mscroll
 
 class MangaFrame(QtGui.QWidget):
     def __init__(self, startdir):
