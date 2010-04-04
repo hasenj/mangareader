@@ -135,7 +135,7 @@ class DirTree(object):
         return self.get_node(parent)
 
 def path_parts(path):
-    path.replace('\\', '/')
+    path = path.replace('\\', '/')
     parts = path.split('/')
     if parts and parts[0] == '': parts = parts[1:]
     if parts and parts[-1] == '': parts = parts[:-1]
