@@ -3,6 +3,8 @@
     License: GPL v2
 
     widget that displays the scrollable manga
+
+    The "frame" here refers to the widget, not the filmstrip frame (we call that a page).
 """
 
 # Qt imports
@@ -30,7 +32,7 @@ class MangaFrame(QtGui.QWidget):
     def paintEvent(self, event):
         painter = QtGui.QPainter()
         painter.begin(self)
-        try: self.last_pages_count = mscroll.paint_scroller(painter, self.scroller)
+        try: self.last_pages_count = self.scroller.paint_using(painter)
         except: print "error in painting"
         painter.end()
 

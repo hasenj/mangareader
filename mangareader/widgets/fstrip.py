@@ -14,10 +14,13 @@ from PyQt4 import QtGui, QtCore
 def create_frame(image_path, width=None):
     """Load a picture into a frame
        @param width: optional, if present, scale image width to match width
+       @returns: a frame object
+       @note: really, it returns a QImage, but we pretend it's not a qt object, but rather
+       a frame object!!!
     """
     # TODO: add some padding maybe
     frame = QtGui.QImage(image_path)
-    if width:
+    if width: # XXX this is duplicated in mscroll's image_loader() (and it's not even used here)
         frame = frame.scaledToWidth(width, QtCore.Qt.SmoothTransformation)
     return frame
 
@@ -36,21 +39,4 @@ def paint_frames(painter, frames, y):
             paint_frame(painter, frame, y)
         y += frame_height 
         frames = frames[1:]
-
-class FilmStrip(QtGui.QWidget):
-    """A Film Strip is a widget that draw a list of pictures vertically"""
-    def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-        self.frames = []
-        self.y = 0
-
-    def setFrames(self, frames, y):
-        self.frames = frames
-        self.y = y
-    
-    def paintEvent(self, event):
-        painter = QtGui.QPainter()
-        painter.begin(self)
-        paint_frames(painter, self.frames, self.y)
-        painter.end()
 

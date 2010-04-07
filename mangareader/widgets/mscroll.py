@@ -247,27 +247,28 @@ class MangaScroller(object):
 
     def loaded_pages_count(self):
         return self.page_list.loaded_pages_count()
+
+    def paint_using(self, painter, count=3):
+        """
+            Render scroller using painter
+
+            @param painter: qt painter
+            @returns: number of frames rendered (so we know if we need to update)
+        """
+        # First, load any unloaded image
+        # TODO: consider setting a zoom factor
+        max_width = painter.viewport().width()
+        for page in self.page_list.as_list():
+            page.load(max_width=max_width) # this loads the page in background, unless already loaded
+        if self.page_list.loaded_pages_count() <= 0: return
+        index = self.page_list.index
+        pages = self.page_list.as_list()[index:index+count]
+        frames = [p.get_frame() for p in pages if p.is_loaded]
+        y = -self.page_list.cursor_pixel
+        fstrip.paint_frames(painter, frames, y)
+        return len(frames) 
+
                 
 class EmptyMangaException(Exception): pass
 class FetchError(Exception): pass
-
-def paint_scroller(painter, scroller, count=3):
-    """
-        Render scroller using painter
-
-        @return number of frames rendered (so we know if we need to update)
-    """
-    # First, load any unloaded image:
-    #   setup loading parameters
-    #   TODO: fix, should be viewing parameters? 
-    max_width = painter.viewport().width()
-    for page in scroller.page_list.as_list():
-        page.load(max_width=max_width) # load page in background, if not already loaded
-    if scroller.page_list.loaded_pages_count() <= 0: return
-    index = scroller.page_list.index
-    pages = scroller.page_list.as_list()[index:index+count] # FIXME: hmm, why is the iteration built into the page list? maybe we should do it as a mapping from filenames to image/page objects
-    frames = [p.get_frame() for p in pages if p.is_loaded]
-    y = -scroller.page_list.cursor_pixel
-    fstrip.paint_frames(painter, frames, y)
-    return len(frames) 
 

@@ -10,6 +10,9 @@
     File nodes are sort of like leafs, in that when walking the tree, we're interested in listing 
     files. However, they are different; leaf nodes can be directories, in which case we don't want
     to list them.
+
+    This module contains interfaces that node and tree implementations must implement
+    in order for them to work with functions in this package
 """
 
 class INode(object):

@@ -33,11 +33,6 @@ class FakeTree(object):
         self.root = root
     def parent(self, node):
         return node.parent
-    def sibling_next(self, node):
-        return tree_node.std_sibling(self.parent(node), node, 1)
-    def sibling_prev(self, node):
-        return tree_node.std_sibling(self.parent(node), node, -1)
-
 
 class TestBasicWalking(unittest.TestCase):
     def setUp(self):
