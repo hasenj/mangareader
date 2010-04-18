@@ -62,11 +62,13 @@ class Page(object):
         # print "queueing:", self.path
         self.loading = 1
         queue_image_loader(image_loader)
+
     @property
     def height(self):
         if not self.is_loaded:
-            return 800 # some weird default? :/
+            return None
         return self.frame.rect().height()
+
     def get_frame(self):
         if not self.is_loaded:
             return None
@@ -159,32 +161,46 @@ class PageList(object):
     def move_cursor(self, amount):
         # amount is in pixels
         self.cursor_pixel += amount
-        # read: if
-        while self.cursor_pixel < 0: # we're moving backwards
-            ok = self.move_index(-1) # move to previous page
-            if not ok: 
-                self.cursor_pixel = 0
-                break
-            if not self.current_page.is_loaded:  # don't proceed if page is not loaded (we don't know its height)
-                print "Breaking out -- page is not loaded yet!! (backward)"
-                self.index += 1 # restore index
-                self.cursor_pixel = 0
-                break # really?
-            self.cursor_pixel += self.current_page.height
-        # read: if (elif?)
-        while self.cursor_pixel > self.current_page.height:
-            if not self.current_page.is_loaded:  # don't proceed if page is not loaded (we don't know its height)
-                print "Breaking out -- page is not loaded yet!! (forward)"
-                # restore index to previous page
-                self.index -= 1
-                self.cursor_pixel = self.current_page.height - 1
-                break # really?
-            new_pixel = self.cursor_pixel - self.current_page.height
-            ok = self.move_index(1)
-            if not ok:
-                self.cursor_pixel = self.current_page.height
-                break
-            self.cursor_pixel = new_pixel
+        loaded = lambda: self.current_page.is_loaded
+        height = lambda: self.current_page.height
+        cursor = lambda: self.cursor_pixel
+        goback = lambda: cursor() < 0
+        goforth = lambda: loaded() and cursor() > height()
+        def backward_break():
+            """cursor just came here, but this page is not loaded, so we assume it came
+            from the next page, and set it back there (to its beginning)!"""
+            print "Breaking out -- page is not loaded yet!! (backward)"
+            self.index += 1 # restore index
+            self.cursor_pixel = 0
+        def forward_break():
+            """next page is not loaded but cursor wants to be at it! 
+            we must set the cursor instead to the end of the current page"""
+            print "Breaking out -- page is not loaded yet!! (forward)"
+            # restore index to previous page
+            self.index -= 1
+            self.cursor_pixel = self.current_page.height - 1
+        if goback(): 
+            while goback():
+                ok = self.move_index(-1) # move to previous page
+                if not ok: 
+                    self.cursor_pixel = 0
+                    break
+                # don't proceed if page is not loaded (we don't know its height)           
+                if not loaded():
+                    forward_break()
+                    return
+                self.cursor_pixel += self.current_page.height
+        elif goforth(): # XXX: this doesn't break when the current page is not even loaded (but should it??)
+            while goforth():
+                if not loaded():
+                    forward_break()
+                    return
+                new_pixel = self.cursor_pixel - self.current_page.height
+                ok = self.move_index(1)
+                if not ok:
+                    self.cursor_pixel = self.current_page.height
+                    break
+                self.cursor_pixel = new_pixel
                 
     def move_index(self, steps):
         """ move the index `steps` steps, and optionally readjusts the context/window
