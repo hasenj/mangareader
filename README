@@ -3,16 +3,84 @@ Description:
 
     Read your manga by scrolling images, much like you scroll pages in pdf/ps/djvw documents.
 
-    I don't know how people usually read their manga, but the way manga is packaged, with each chapter in its own directory, people tend to 
+    I don't know how people usually read their manga, but the way manga is packaged, with each chapter in its own directory, I'm guessing that people tend to:
 
     * extract each chapter to a directory 
     * keep a file browser open, 
-    * go into a directory, 
-       * open the first image in whatever image viewer they have
-       * keep hitting next to read the next page
+    * go into a chapter directory, 
+       * open the first image (using whatever image viewer they have as the default)
+       * keep hitting next to read the next page, until chapter is done
        * go back to the file browser
        * go up a directory
        * move to the next chapter
        * repeat
+
+    This process gets tedious very quickly.
+
+    I've seen some manga reading apps that don't seem to provide anything to improve that process; they still behave like typical image viewers.
+
+    This Manga Reader is different. It understands that manga is a list of pages, each page is an image, these images are structured as a hierarchy in a directory tree. It understands that you want to read the manga (as opposed to staring at images), and it understands that sometimes the directory structure can be big and messy, so it pays extra attention to performance.
+
+    Manga Reader will intelligently load images without reading the *entire* directory tree; it'll only look at the part of the tree that contains what you're currently reading, and it will seemlessly move across subdirectories.
+
+    Manga Reader will not keep too many images loaded in RAM at once, it will transparently load and unload images according the context of your reading.
+
+    You can scroll images pretty fast.
+    
+    In short, Manga Reader is:
+
+        * fast
+        * lite
+        * responsive
+
+    And this is just the beginning; the project is very young, and many more features are planned.
+
+Usage Instructions:
+===================
+
+    The GUI is *very* minimal. It only displays the pages :)
+
+    This is partly intended, and partly laziness!
+
+    To open a manga, press o and browse to the directory that contains that manga (all chapters must be inside that directory).
+
+    For instance, your directory can be arranged like this:
+
+        manga_name/
+            chapter 01/
+                image 01.jpg
+                image 02.jpg
+                ....
+            chapter 02/
+                image 01.jpg
+                image 02.jpg
+                ....
+            chapter 03/
+                ....
+            chapter 04/
+                ....
+            .....
+
+    All you need to do is choose to top level directory (manga_name) and Manga Reader will start reading that manga.
+
+    You read the manga by scrolling, you can scroll using:
+
+        - The mouse wheel
+        - Arrows (up/down) and Page up/Page down buttons
+        - Space
+        - j/k (and J/K)
+
+    You can jump to a certain chapter: press i on the keyboard and choose the chapter's directory. (If you're on windows, the dialog is rather annoying, I'm aware of this and plan to improve it)
+
+    You can quit by pressing q (or just closing the window)
+
+Planned Features:
+=================
+
+    * Bookmarks
+    * Remember where you were
+    * nicer gui controls (for switching manga and jumping to chapters)
+    * Read directly from zip files (treat them as directories)
+    * vim-style command bar
 
 
