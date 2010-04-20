@@ -1,36 +1,48 @@
-        MANGA READER APPLICATION
+Manga Reader - Product Document
+===============================
 
 Goal:
-    To create a simple and effecient application for reading manga
-    Effeciency in both performance and user interaction.
+=====
+
+create a simple and effecient application for reading manga
+Effeciency in both performance and user interaction.
 
 Description:
-    The program will read a directory that contains a specific manga
-    within it. The manga, being a series of images sorted alphabetically.
-    This manga can be split into multiple directories, so 
-    the application must read images in this directory and all its
-    subdirectories recursively.
+============
 
-    Images will be presented as a vertical filmstrip where the user
-    reads by scrolling down (and up); much like reading a pdf document.
+The program reads a directory that contains a specific manga within it. The manga, being a series of images sorted alphabetically.
+This manga can be split into multiple directories, so the application reads images in this directory and all its subdirectories recursively.
 
-    The application will feature some concepts from vim, such as keyboard
-    interaction, a command bar, remembering history, etc.
-    
-    Main features should be accessible both through keyboard commands and
-    graphical elements (gui).
+Images are presented to the user as a vertical filmstrip where the user reads by scrolling down (and up); much like reading a pdf document.
 
-Minimum Requirements:
-    * Read (and display) images recursively from a manga directory. [done]
-        * Must be lazy; don't read entire directory tree at once. [done]
-    * Scroll up/down using k/j keys and mouse wheel. [done]
-    * Jump to a certain chapter, or volume/chapter. [done]
+The application will feature some concepts from vim, such as keyboard interaction, a command bar, remembering history, etc.
 
-Medium Level Requirements:    
-    * Treat zip archives as directories
-        * And support as many other formats as possible (rar, 7z, etc..) with priority given to FOSS formats.
-    * Save/load manga information, such as manga folder and where the user was last time. [wip]
-    * Implement bookmarks: allow the user to bookmark a location and jump to it later.
-    * Open a command bar when user hits : key.
-    * Allow user to resize view (e.g. based on window width)
+Main features are accessible through keyboard presses and graphical elements (gui).  
+
+Milestone 1: [done]
+------------
+
+* Read (and display) images recursively from a manga directory. [done]
+* Scroll up/down using k/j keys and mouse wheel. [done]
+* Jump to a certain chapter, or volume/chapter. [done]
+
+Milestone 2:
+------------
+
+* Remember last manga user was reading [wip]
+* Remember last page user was reading from each manga [wip]
+* Provide a nice gui to jump to chapters
+* Provide a ui for bookmarks
+
+Milestone 3:
+------------
+
+* Treat zip archives as directories
+* Open a command bar when user hits : key.
+* Allow user to zoom view
+
+Milestone x:
+------------
+
+* Supply a managa orginzation tool (separate app)
 
