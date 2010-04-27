@@ -27,18 +27,28 @@ from mangareader.bgloader import queue_image_loader
 
 import os.path
 
+def scaled_image(image, new_width):
+    return image.scaledToWidth(new_width, QtCore.Qt.SmoothTransformation)
+
+def get_desired_display_width(image, zoom_percent=100, max_width=None):    
+    new_width = image.width() * (zoom_percent/100.0)
+    if max_width is not None and max_width < new_width:
+        new_width = max_width
+    print "desired display width is:", new_width
+    return new_width
+
 class Page(object):
     def __init__(self, path):
         self.path = path
-        self.loading = 0 # 0 = not loaded; 1 = loading; 2 = loaded
-        self.frame = None
-        self.scaled = {}
+        self.loading = 0  # 0 = not loaded; 1 = loading; 2 = loaded
+        self.frame = None # the QImage object
+        self.scaled = {}  # a mapping from percentage to a scaled QImage 
 
     @property
     def is_loaded(self): 
         return self.loading == 2
 
-    def load(self, max_width=None):
+    def load(self):
         """
             Load page in the background, if not already loaded.
 
@@ -54,14 +64,19 @@ class Page(object):
         if self.loading > 0: return
         def image_loader(): # this will run in a background thread
             _frame = fstrip.create_frame(self.path)
-            if max_width and _frame.rect().width() > max_width:
-                _frame = _frame.scaledToWidth(max_width, QtCore.Qt.SmoothTransformation)
             self.frame = _frame
-            self.loading = 2
+            self._set_loading_status('done')
             # print "done loading", self.path
         # print "queueing:", self.path
-        self.loading = 1
+        self._set_loading_status('loading')
         queue_image_loader(image_loader)
+
+    def _set_loading_status(self, status):
+        print status
+        self.loading = {
+                'loading':1,
+                'done':2
+            }.get(status)
 
     @property
     def height(self):
@@ -69,10 +84,13 @@ class Page(object):
             return None
         return self.frame.rect().height()
 
-    def get_frame(self):
+    def get_frame(self, percent=100, max_width=None):
         if not self.is_loaded:
             return None
-        return self.frame
+        display_width = get_desired_display_width(self.frame, zoom_percent=percent, max_width=max_width)
+        if not self.scaled.has_key(display_width):
+            self.scaled[display_width] = scaled_image(self.frame, new_width=display_width)
+        return self.scaled[display_width]
 
 class ImageCache(object):
     """A mapping from image path to page object, with caching
@@ -275,11 +293,11 @@ class MangaScroller(object):
         # TODO: consider setting a zoom factor
         max_width = painter.viewport().width()
         for page in self.page_list.as_list():
-            page.load(max_width=max_width) # this loads the page in background, unless already loaded
+            page.load() # this loads the page in background, unless already loaded
         if self.page_list.loaded_pages_count() <= 0: return
         index = self.page_list.index
         pages = self.page_list.as_list()[index:index+count]
-        frames = [p.get_frame() for p in pages if p.is_loaded]
+        frames = [p.get_frame(percent=120, max_width=max_width) for p in pages if p.is_loaded]
         y = -self.page_list.cursor_pixel
         fstrip.paint_frames(painter, frames, y)
         return len(frames) 
