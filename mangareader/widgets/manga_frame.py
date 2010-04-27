@@ -18,10 +18,13 @@ class MangaFrame(QtGui.QWidget):
         QtGui.QWidget.__init__(self, None)
         self.scroller = mscroll.MangaScroller(startdir)
         self.last_pages_count = 0 # we use this to know to re-render when new pages are loaded!
+        self._zoom_factor = 100 # in percent
+        self.dirty = True
 
         self.timer = QtCore.QTimer()
         self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timerEvent)
         self.timer.start(80) # number is msec
+
 
     def scrollDown(self, step=None):
         self.scroller.scroll_down(step)
@@ -32,13 +35,22 @@ class MangaFrame(QtGui.QWidget):
     def paintEvent(self, event):
         painter = QtGui.QPainter()
         painter.begin(self)
-        try: self.last_pages_count = self.scroller.paint_using(painter)
-        except: print "error in painting"
-        painter.end()
+        try: 
+            self.last_pages_count = self.scroller.paint_using(painter, 
+                zoom_factor=self.zoom_factor, 
+                max_width=painter.viewport().width()
+                )
+        except: 
+            print "error in painting"
+        finally:
+            painter.end()
 
     def timerEvent(self):
         if self.scroller.loaded_pages_count() > self.last_pages_count:
+            self.dirty=True
+        if self.dirty:
             self.repaint()
+
 
     def change_manga(self, path):
         # TODO remember where we were last time we were reading this mange
@@ -48,4 +60,21 @@ class MangaFrame(QtGui.QWidget):
 
     def change_chapter(self, path):
         self.scroller.change_chapter(path)
+
+    def zoom_in(self, amount):
+        self.set_zoom_factor(self.zoom_factor + amount)
+
+    def zoom_out(self, amount):
+        self.zoom_in(-amount)
+
+    def reset_zoom(self):
+        self.set_zoom_factor(100)
+
+    @property
+    def zoom_factor(self): 
+        return self._zoom_factor
+
+    def set_zoom_factor(self, value):
+        self._zoom_factor = value
+        self.dirty = True
 

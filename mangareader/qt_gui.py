@@ -71,6 +71,12 @@ class MainWindow(QtGui.QWidget):
             self.choose_chapter()
         if key == ':':
             print "cmdbar TODO"
+        if key == 'z':
+            self.manga_frame.zoom_in(10)
+        if key == 'x':
+            self.manga_frame.zoom_out(10)
+        if key == 'Z':
+            self.manga_frame.reset_zoom()
         self.manga_frame.repaint()
 
     def wheelEvent(self, event):

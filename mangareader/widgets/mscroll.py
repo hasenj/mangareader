@@ -34,7 +34,6 @@ def get_desired_display_width(image, zoom_percent=100, max_width=None):
     new_width = image.width() * (zoom_percent/100.0)
     if max_width is not None and max_width < new_width:
         new_width = max_width
-    print "desired display width is:", new_width
     return new_width
 
 class Page(object):
@@ -282,7 +281,7 @@ class MangaScroller(object):
     def loaded_pages_count(self):
         return self.page_list.loaded_pages_count()
 
-    def paint_using(self, painter, count=3):
+    def paint_using(self, painter, count=3, zoom_factor=100, max_width=None):
         """
             Render scroller using painter
 
@@ -290,14 +289,12 @@ class MangaScroller(object):
             @returns: number of frames rendered (so we know if we need to update)
         """
         # First, load any unloaded image
-        # TODO: consider setting a zoom factor
-        max_width = painter.viewport().width()
         for page in self.page_list.as_list():
             page.load() # this loads the page in background, unless already loaded
         if self.page_list.loaded_pages_count() <= 0: return
         index = self.page_list.index
         pages = self.page_list.as_list()[index:index+count]
-        frames = [p.get_frame(percent=120, max_width=max_width) for p in pages if p.is_loaded]
+        frames = [p.get_frame(percent=zoom_factor, max_width=max_width) for p in pages if p.is_loaded]
         y = -self.page_list.cursor_pixel
         fstrip.paint_frames(painter, frames, y)
         return len(frames) 
