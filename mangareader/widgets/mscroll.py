@@ -79,9 +79,13 @@ class Page(object):
 
     @property
     def height(self):
+        return self.get_height()
+
+    def get_height(self, zoom_factor=100, max_width=None):
         if not self.is_loaded:
             return None
-        return self.frame.rect().height()
+        return self.get_frame(zoom_factor, max_width).rect().height()
+        
 
     def get_frame(self, percent=100, max_width=None):
         if not self.is_loaded:
@@ -140,6 +144,7 @@ class PageList(object):
             raise EmptyMangaException
         self.index = 0
         self.cursor_pixel = 0
+        self.zoom_factor = 100 # in percentage
 
     def loaded_pages_count(self):
         sum = 0
@@ -182,6 +187,7 @@ class PageList(object):
         """Move the cursor `amount` pixels
         @returns: the amount of pixels actually moved
         """
+        if not self.current_page.is_loaded: return 0
         given_amount = amount
         def next_available(offset=1):
             """Can we move to the next page?
@@ -310,6 +316,10 @@ class MangaScroller(object):
     def loaded_pages_count(self):
         return self.page_list.loaded_pages_count()
 
+    def set_zoom_factor(self, value):
+        """dummy method that's not used right now!!"""
+        self.zoom_factor = value
+
     def paint_using(self, painter, count=3, zoom_factor=100, max_width=None):
         """
             Render scroller using painter
@@ -324,7 +334,11 @@ class MangaScroller(object):
         index = self.page_list.index
         pages = self.page_list.as_list()[index:index+count]
         frames = [p.get_frame(percent=zoom_factor, max_width=max_width) for p in pages if p.is_loaded]
-        y = -self.page_list.cursor_pixel
+        if len(frames) == 0: return 0
+        original_height = pages[0].get_height()
+        new_height = pages[0].get_height(zoom_factor, max_width)
+        y = -self.page_list.cursor_pixel * new_height / original_height
+        print "y is:", y
         fstrip.paint_frames(painter, frames, y)
         return len(frames) 
 

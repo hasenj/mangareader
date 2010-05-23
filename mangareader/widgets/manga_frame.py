@@ -41,6 +41,7 @@ class MangaFrame(QtGui.QWidget):
                 max_width=painter.viewport().width()
                 )
         except: 
+            raise
             print "error in painting"
         finally:
             painter.end()
@@ -75,6 +76,8 @@ class MangaFrame(QtGui.QWidget):
         return self._zoom_factor
 
     def set_zoom_factor(self, value):
+        if value < 90: return # don't zoom out too much
         self._zoom_factor = value
+        self.scroller.set_zoom_factor(value)
         self.dirty = True
 
