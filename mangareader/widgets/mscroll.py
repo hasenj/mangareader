@@ -155,6 +155,9 @@ class PageList(object):
     def page_path(self, index):
         return self.nodes[index].path
 
+    def length(self):
+        return len(self.nodes)
+
     def as_list(self):
         """get a list of the pages we have"""
         return map(self.page, range(len(self.nodes)))
@@ -176,48 +179,74 @@ class PageList(object):
         self.move_cursor(-step)
 
     def move_cursor(self, amount):
-        # amount is in pixels
-        self.cursor_pixel += amount
-        loaded = lambda: self.current_page.is_loaded
-        height = lambda: self.current_page.height
-        cursor = lambda: self.cursor_pixel
-        goback = lambda: cursor() < 0
-        goforth = lambda: loaded() and cursor() > height()
-        def backward_break():
-            """cursor just came here, but this page is not loaded, so we assume it came
-            from the next page, and set it back there (to its beginning)!"""
-            print "Breaking out -- page is not loaded yet!! (backward)"
-            self.index += 1 # restore index
+        """Move the cursor `amount` pixels
+        @returns: the amount of pixels actually moved
+        """
+        given_amount = amount
+        def next_available(offset=1):
+            """Can we move to the next page?
+            @returns: True if the next page exists and is loaded; False otherwise
+            @notes: can be used for previous by passing offset=-1
+            """
+            index = lambda: self.index+offset
+            return 0 <= index() < self.length() and self.page(index()).is_loaded
+        def prev_available(): return next_available(offset=-1)
+
+        curr_height_limit = lambda: self.current_page.height - 1
+
+        def move_to_page_end(max=None):
+            """@returns: amount moved"""
+            amount = curr_height_limit() - self.cursor_pixel
+            if max and max < amount: amount = max
+            self.cursor_pixel += amount
+            return amount
+
+        def jump_next_page(room=0):
+            """@returns: amount moved"""
+            if not self.cursor_pixel == curr_height_limit(): return 0 # more like an assert?
+            if room == 0 or not next_available(): return 0
+            self.index += 1
             self.cursor_pixel = 0
-        def forward_break():
-            """next page is not loaded but cursor wants to be at it! 
-            we must set the cursor instead to the end of the current page"""
-            print "Breaking out -- page is not loaded yet!! (forward)"
-            # restore index to previous page
+            return 1
+
+        def can_move_down():
+            """is there anything to scroll down to anyway?"""
+            return self.cursor_pixel < curr_height_limit() or next_available()
+
+        def move_to_page_top(max=None):
+            """@returns: amount moved"""
+            amount = -self.cursor_pixel
+            if max and abs(max) < abs(amount): amount = max
+            self.cursor_pixel += amount
+            return -amount
+
+        def jump_prev_page(room=0):
+            """@returns: amount moved"""
+            if not self.cursor_pixel == 0: return 0 # more like an assert?
+            if room == 0 or not prev_available(): return 0
             self.index -= 1
-            self.cursor_pixel = self.current_page.height - 1
-        if goback(): 
-            while goback():
-                ok = self.move_index(-1) # move to previous page
-                if not ok: 
-                    self.cursor_pixel = 0
-                    break
-                # don't proceed if page is not loaded (we don't know its height)           
-                if not loaded():
-                    forward_break()
-                    return
-                self.cursor_pixel += self.current_page.height
-        elif goforth(): # XXX: this doesn't break when the current page is not even loaded (but should it??)
-            while goforth():
-                if not loaded():
-                    forward_break()
-                    return
-                new_pixel = self.cursor_pixel - self.current_page.height
-                ok = self.move_index(1)
-                if not ok:
-                    self.cursor_pixel = self.current_page.height
-                    break
-                self.cursor_pixel = new_pixel
+            self.cursor_pixel = curr_height_limit()
+            return -1
+
+        def can_move_up():
+            """is there anything to scroll up to anyway?"""
+            return self.cursor_pixel > 0 or prev_available()
+
+        # test for just moving forward
+        print "scrolling"
+        while amount > 0 and can_move_down():
+            print '\t', amount
+            amount -= move_to_page_end(max=amount)
+            amount -= jump_next_page(room=amount)
+        while amount < 0:
+            print '\t', amount
+            a = amount
+            amount += move_to_page_top(max=amount)
+            amount += jump_prev_page(room=amount)
+            if amount - a == 0: break
+        print "/scrolling"
+
+        self._check_reset_window()
                 
     def move_index(self, steps):
         """ move the index `steps` steps, and optionally readjusts the context/window
