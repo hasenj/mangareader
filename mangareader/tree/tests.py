@@ -24,7 +24,7 @@ class FakeNode(object):
             self.isfile = False
             self.ls = children
             for node in self.ls:
-                node.parent = self # the tree can be dumb! we manage our own children
+                node.parent = self # the tree can be dumb! we manage our own parents!
     def __repr__(self):
         return "[node \"%s\"]" % self.name
 
