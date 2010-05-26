@@ -43,6 +43,28 @@ class IPageList(object):
         """ Length of the current view-list """
         raise NotImplemented
 
+def get_loaded_context(list, index):
+    """ Get a sub list of pages that are loaded and reachable from index, 
+        where reachable means all items between it and the item and index 
+        are also loaded
+
+        @returns: (offset, list)
+            where offset is the index of the first item of the list
+            list is a list of the loaded pages
+    """
+    result = []
+    for i in range(index, len(page_list)):
+        page = page_list.page_it(i)
+        if not page.is_loaded(): break
+        result += page
+    offset = index
+    for i in range(index-1,-1,-1): # items before current index, in reverse
+        page = page_list.page_it(i)
+        if not page.is_loaded(): break
+        offset = i
+        result = [page] + result
+    return offset, result
+
 def is_page_available(page_list, index):
     return 0 <= index < page_list.length() and page_list.page_at(index).is_loaded()
 
@@ -79,15 +101,9 @@ class PageCursor(object):
             space to move across, doing the move globally, then translating
             it to local coordinates again
         """
-        heights = [] # array of ints
-        for page in self.page_list[self.index:]: # after page
-            if not page.is_loaded(): break
-            heights.append(page.get_height(self.view_settings))
-        first_index = self.index
-        for index, page in enumerate(self.page_list[self.index-1::-1]): # before current page
-            if not page.is_loaded(): break
-            first_index = index
-            heights = [page.get_height(self.view_settings)] + heights
+        first_index, loaded_context = get_loaded_context(self.page_list, self.index)
+        heights = (page.get_height(self.view_settings) 
+                for page in loaded_context)
 
         def minmax(low, val, max):
             if low > val:
