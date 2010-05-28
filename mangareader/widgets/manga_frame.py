@@ -23,7 +23,7 @@ class MangaFrame(QtGui.QWidget):
 
         self.timer = QtCore.QTimer()
         self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timerEvent)
-        self.timer.start(80) # number is msec
+        self.timer.start(500) # number is msec
 
 
     def scrollDown(self, step=None):
