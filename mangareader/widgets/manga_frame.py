@@ -11,7 +11,7 @@
 from PyQt4 import QtGui, QtCore
 
 # Project imports
-from mangareader.widgets import fstrip, mscroll
+from mangareader.widgets import fstrip, mscroll, scrolling
 
 class MangaFrame(QtGui.QWidget):
     def __init__(self, startdir):
@@ -35,11 +35,10 @@ class MangaFrame(QtGui.QWidget):
     def paintEvent(self, event):
         painter = QtGui.QPainter()
         painter.begin(self)
+        view_settings = scrolling.ViewSettings(zoom_level=self.zoom_factor, 
+                max_width=painter.viewport().width())
         try: 
-            self.last_pages_count = self.scroller.paint_using(painter, 
-                zoom_factor=self.zoom_factor, 
-                max_width=painter.viewport().width()
-                )
+            self.last_pages_count = self.scroller.paint_using(painter, view_settings)
         except: 
             raise
             print "error in painting"

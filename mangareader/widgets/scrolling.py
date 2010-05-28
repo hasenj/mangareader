@@ -10,10 +10,20 @@ class ViewSettings(object):
         zooming level
         max width
         .. etc ..
+
+        @param zoom_level: in percentage, i.e. 100 is unzoomed
+        @param max_width: optional; if present, limits the zoom
     """
-    def __init__(self, zoom_level, max_width):
+    def __init__(self, zoom_level=100, max_width=None):
         self.zoom_level = zoom_level
         self.max_width = max_width
+
+    def transformed_width(self, width):
+        """What the width should be according to this view setting"""
+        width = width * (self.zoom_level/100.0)
+        if self.max_width is not None and self.max_width < width:
+            width = self.max_width
+        return width
 
 class IPage(object):
     """dummy class -- serves only as a documentation"""
@@ -94,7 +104,7 @@ class PageCursor(object):
         """ Get a list of heights and use that as a basis for moving.
 
             We consider the pixel position to be local if it's bound to 
-            particular index. A global position is one that's not bount to a
+            particular index. A global position is one that's not bound to a
             specific index, but relative to the whole list.
             We use a method to translate (local,index)<->global position, so
             moving the cursor is simply a matter of seeing the max available

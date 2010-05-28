@@ -1,5 +1,5 @@
 """
-    Author: Hasen "hasenj" il Judy
+    Author: Hasen el Judy
     License: GPL v2
 
     Manager for scrolling manga. The idea is that the scroller doesn't see the entire directory tree,
@@ -24,17 +24,17 @@ from mangareader.widgets import fstrip
 from mangareader.tree.walk import step as walk_step
 from mangareader.tree.view import context as view_context
 from mangareader.bgloader import queue_image_loader
+from mangareader.widgets.scrolling import ViewSettings
 
 import os.path
 
 def scaled_image(image, new_width):
     return image.scaledToWidth(new_width, QtCore.Qt.SmoothTransformation)
 
-def get_desired_display_width(image, zoom_percent=100, max_width=None):    
-    new_width = image.width() * (zoom_percent/100.0)
-    if max_width is not None and max_width < new_width:
-        new_width = max_width
-    return new_width
+def get_desired_display_width(image, view_settings=None):    
+    if view_settings is None: 
+        view_settings = ViewSettings() # use the defaults
+    return view_settings.transformed_width(image.width())
 
 class Page(object):
     def __init__(self, path):
@@ -81,16 +81,20 @@ class Page(object):
     def height(self):
         return self.get_height()
 
-    def get_height(self, zoom_factor=100, max_width=None):
+    def get_height(self, view_settings=None):
         if not self.is_loaded:
             return None
-        return self.get_frame(zoom_factor, max_width).rect().height()
+        return self.get_frame(view_settings).rect().height()
         
 
-    def get_frame(self, percent=100, max_width=None):
+    def get_frame(self, view_settings=None):
         if not self.is_loaded:
             return None
-        display_width = get_desired_display_width(self.frame, zoom_percent=percent, max_width=max_width)
+        # The view settings determine the size of the image
+        # To be efficient, we use a dictionary to cache resized images
+        # we use the display width as the key, because that's what we're 
+        # _semantically_ interested in when displaying the image
+        display_width = get_desired_display_width(self.frame, view_settings)
         if not self.scaled.has_key(display_width):
             self.scaled[display_width] = scaled_image(self.frame, new_width=display_width)
         return self.scaled[display_width]
@@ -320,7 +324,8 @@ class MangaScroller(object):
         """dummy method that's not used right now!!"""
         self.zoom_factor = value
 
-    def paint_using(self, painter, count=3, zoom_factor=100, max_width=None):
+    # TODO This will need a big (good :) rewrite!
+    def paint_using(self, painter, view_settings):
         """
             Render scroller using painter
 
@@ -329,16 +334,19 @@ class MangaScroller(object):
         """
         # First, load any unloaded image
         for page in self.page_list.as_list():
-            page.load() # this loads the page in background, unless already loaded
+            page.load() # this loads the page _in the background_, unless already loaded
         if self.page_list.loaded_pages_count() <= 0: return
         index = self.page_list.index
-        pages = self.page_list.as_list()[index:index+count]
-        frames = [p.get_frame(percent=zoom_factor, max_width=max_width) for p in pages if p.is_loaded]
+        limit = index + 3 # TEMP
+        pages = self.page_list.as_list()[index:limit]
+        frames = [p.get_frame(view_settings) for p in pages if p.is_loaded]
         if len(frames) == 0: return 0
         original_height = pages[0].get_height()
-        new_height = pages[0].get_height(zoom_factor, max_width)
+        new_height = pages[0].get_height(view_settings)
+        # TODO factorize this calculation .. it might allow us more flexibility/options
+        # such as interpreting the cursor to be in the middle instead of the top
         y = -self.page_list.cursor_pixel * new_height / original_height
-        print "y is:", y
+        # print "y is:", y
         fstrip.paint_frames(painter, frames, y)
         return len(frames) 
 
