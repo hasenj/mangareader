@@ -87,12 +87,13 @@ class MainWindow(QtGui.QWidget):
 import sys
 
 def main():
+    startdir = ''
     if len(sys.argv) > 1:
         startdir = sys.argv[1]
     else:
         startdir = test_path
-        if not os.path.exists(startdir):
-            startdir = ''
+    if not os.path.exists(startdir):
+        startdir = ''
     qapp = QtGui.QApplication(sys.argv)
     window = MainWindow(startdir)
     window.resize(1000, 800)

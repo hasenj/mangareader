@@ -143,9 +143,9 @@ class PageList(object):
         self.nodes = []
         self.img_cache = ImageCache()
         first_node = walk_step(self.tree, self.tree.root)
-        self._reset_window(first_node)
-        if len(self.nodes) == 0:
+        if first_node is None:
             raise EmptyMangaException
+        self._reset_window(first_node)
         self.index = 0
         self.cursor_pixel = 0
         self.zoom_factor = 100 # in percentage
