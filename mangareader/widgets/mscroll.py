@@ -283,7 +283,6 @@ class PageList(object):
 
     def _check_reset_window(self):
         """check if we should reset window, and do it!"""
-        if len(self.nodes) < 6: return # don't even bother, 
         if self.index < 2 or self.index + 4 > len(self.nodes):
             print "resetting!"
             self._reset_window()
