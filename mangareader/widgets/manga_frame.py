@@ -21,7 +21,6 @@ class MangaFrame(QtGui.QWidget):
         QtGui.QWidget.__init__(self, None)
         self.scroller = mscroll.MangaScroller(startdir)
         # we use this to know to re-render when new pages are loaded!
-        self.last_pages_count = 0 
         self._zoom_factor = 100 # in percent
         self.dirty = True
 
@@ -39,13 +38,12 @@ class MangaFrame(QtGui.QWidget):
     def paintEvent(self, event):
         painter = QtGui.QPainter()
         painter.begin(self)
-        view_settings = scrolling.ViewSettings(zoom_level=self.zoom_factor, 
-                max_width=painter.viewport().width())
+        self.scroller.view_settings.set_max_width(painter.viewport().width())
+        self.scroller.view_settings.set_zoom_level(self.zoom_factor)
         try: 
-            self.last_pages_count = self.scroller.paint_using(painter,
-                    view_settings)
+            self.scroller.paint_using(painter)
         except: 
-            raise
+            raise # for debug only
             print "error in painting"
         finally:
             painter.end()

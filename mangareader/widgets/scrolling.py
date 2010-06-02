@@ -25,6 +25,12 @@ class ViewSettings(object):
             width = self.max_width
         return width
 
+    def set_max_width(self, width):
+        self.max_width = width
+
+    def set_zoom_level(self, zoom_level):
+        self.zoom_level = zoom_level
+
 class IPage(object):
     """dummy class -- serves only as a documentation"""
     def get_height(self, view_settings):

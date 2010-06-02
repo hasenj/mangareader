@@ -169,7 +169,6 @@ class PageList(object):
     def current_page(self):
         return self.page(self.index)
 
-    # TODO: fix renames
     # def change_chapter(self, path):
     def reset_to_path(self, path):
         chapter_node = self.tree.get_node(path)
@@ -208,8 +207,8 @@ class MangaScroller(object):
         except EmptyMangaException: 
             print "Warning: empty manga"
             self.page_list = EmptyPageList()
-        # TODO: set to false after painting if there's
-        # nothing more to paint
+        # TODO: use the dirty attribute after paint to indicate
+        # if a refresh is still needed
         self.dirty = True 
 
     def change_chapter(self, path):
@@ -225,14 +224,13 @@ class MangaScroller(object):
         self.cursor.move(amount)
 
     # TODO: This will need a big (good :) rewrite!
-    # TODO:should mark whether or not some space is left unrendered so that we
-    # know when we need to render image when they load
-    def paint_using(self, painter, view_settings):
+    # TODO: should mark whether or not some space is left unrendered so that we
+    # know when we need to render images when they load
+    def paint_using(self, painter):
         """
             Render scroller using painter
 
             @param painter: qt painter
-            @returns: number of frames rendered (so we know if we need to update)
         """
         # First, load any unloaded image
         for i in range(self.page_list.length()):
@@ -241,17 +239,17 @@ class MangaScroller(object):
         index = self.cursor.index - findex
         limit = index + 3 # TEMP
         pages = loaded[index:limit]
-        frames = [p.get_frame(view_settings) for p in pages]
+        frames = [p.get_frame(self.view_settings) for p in pages]
         if len(frames) == 0: return 0
         # XXX: this is for transorming the image according to view_settings
         # TODO: refactor
         original_height = pages[0].get_height() 
-        new_height = pages[0].get_height(view_settings)
+        new_height = pages[0].get_height(self.view_settings)
         # TODO factorize this calculation .. it might allow us more flexibility/options
         # such as interpreting the cursor to be in the middle instead of the top
         y = -self.cursor.pixel * new_height / original_height
         fstrip.paint_frames(painter, frames, y)
-        return len(frames) 
+        # return len(frames) 
 
                 
 class EmptyMangaException(Exception): pass
