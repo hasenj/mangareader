@@ -81,6 +81,5 @@ class MangaFrame(QtGui.QWidget):
     def set_zoom_factor(self, value):
         if value < 70: return # don't zoom out too much
         self._zoom_factor = value
-        self.scroller.set_zoom_factor(value)
         self.dirty = True
 
