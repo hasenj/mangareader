@@ -216,10 +216,10 @@ class MangaScroller(object):
         self.page_list.reset_to_path(path)
 
     def scroll_down(self, step=100):
-        self.move_cursor(100)
+        self.move_cursor(step)
     
     def scroll_up(self, step=100):
-        self.move_cursor(-100)
+        self.move_cursor(-step)
 
     def move_cursor(self, amount):
         self.cursor.move(amount)

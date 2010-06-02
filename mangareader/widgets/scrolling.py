@@ -71,7 +71,7 @@ def get_loaded_context(page_list, index):
         result += [page]
     offset = index
     for i in range(index-1,-1,-1): # items before current index, in reverse
-        page = page_list.page_it(i)
+        page = page_list.page_at(i)
         if not page.is_loaded(): break
         offset = i
         result = [page] + result
@@ -102,7 +102,7 @@ class PageCursor(object):
             @returns: the amount of pixels actually moved
         """
         amount_moved = self._move(amount) 
-        self.index = self.page_list.reset_index(self.index)
+        self.index = self.page_list.reset_window(self.index)
         return amount_moved
 
     def _move(self, amount):
@@ -138,12 +138,12 @@ class PageCursor(object):
 
         # apply the results of the calculations
         self.index = first_index + local_index 
-        self.pixel = pixel
+        self.pixel = local_pixel
         return amount_moved
 
 class HeightList(object):
     def __init__(self, heights):
-        self.heights = heights
+        self.heights = list(heights)
     def local_to_global(self, lindex, lpixel):
         return sum(self.heights[:lindex]) + lpixel
     def global_to_local(self, pixel):
