@@ -2,9 +2,12 @@
     Author: Hasen "hasenj" il Judy
     License: GPL v2
 
-    widget that displays the scrollable manga
+    MangaFrame: widget that displays the scrollable manga
 
-    The "frame" here refers to the widget, not the filmstrip frame (we call that a page).
+    The "frame" here refers to the widget that hosts the manga scroller
+
+    Don't confuse this with the frame concenpt from a film-strip, we call these
+    things "pages" here!
 """
 
 # Qt imports
@@ -17,7 +20,8 @@ class MangaFrame(QtGui.QWidget):
     def __init__(self, startdir):
         QtGui.QWidget.__init__(self, None)
         self.scroller = mscroll.MangaScroller(startdir)
-        self.last_pages_count = 0 # we use this to know to re-render when new pages are loaded!
+        # we use this to know to re-render when new pages are loaded!
+        self.last_pages_count = 0 
         self._zoom_factor = 100 # in percent
         self.dirty = True
 
@@ -38,19 +42,19 @@ class MangaFrame(QtGui.QWidget):
         view_settings = scrolling.ViewSettings(zoom_level=self.zoom_factor, 
                 max_width=painter.viewport().width())
         try: 
-            self.last_pages_count = self.scroller.paint_using(painter, view_settings)
+            self.last_pages_count = self.scroller.paint_using(painter,
+                    view_settings)
         except: 
             raise
             print "error in painting"
         finally:
             painter.end()
 
+    # XXX: this is a hack to paint images than need to wait for loading
+    # TODO: replace with an image-loaded event
     def timerEvent(self):
-        if self.scroller.loaded_pages_count() > self.last_pages_count:
-            self.dirty=True
-        if self.dirty:
+        if self.scroller.dirty:
             self.repaint()
-
 
     def change_manga(self, path):
         # TODO remember where we were last time we were reading this mange
@@ -75,7 +79,7 @@ class MangaFrame(QtGui.QWidget):
         return self._zoom_factor
 
     def set_zoom_factor(self, value):
-        if value < 90: return # don't zoom out too much
+        if value < 70: return # don't zoom out too much
         self._zoom_factor = value
         self.scroller.set_zoom_factor(value)
         self.dirty = True

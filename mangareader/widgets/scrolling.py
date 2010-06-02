@@ -41,19 +41,21 @@ class IPageList(object):
     """
     def page_at(self, index):
         """ Index function
+
             @returns an IPage object
         """
         raise NotImplemented
     def reset_window(self, index):
         """ Load/Unload pages as needed, around `index`
-            Returns the new index of the object that index was pointing to
+
+            @returns the new index of the object that index was pointing to
         """
         raise NotImplemented
     def length(self):
         """ Length of the current view-list """
         raise NotImplemented
 
-def get_loaded_context(list, index):
+def get_loaded_context(page_list, index):
     """ Get a sub list of pages that are loaded and reachable from index, 
         where reachable means all items between it and the item and index 
         are also loaded
@@ -63,10 +65,10 @@ def get_loaded_context(list, index):
             list is a list of the loaded pages
     """
     result = []
-    for i in range(index, len(page_list)):
-        page = page_list.page_it(i)
+    for i in range(index, page_list.length()):
+        page = page_list.page_at(i)
         if not page.is_loaded(): break
-        result += page
+        result += [page]
     offset = index
     for i in range(index-1,-1,-1): # items before current index, in reverse
         page = page_list.page_it(i)
@@ -81,6 +83,9 @@ def is_page_available(page_list, index):
 class PageCursor(object):
     """
         A cursor/pointer/marker to where we are on a page list
+
+        @param page_list: IPageList-conformant object
+        @param view_settings: ViewSettings object
     """
     def __init__(self, page_list, view_settings, index=0):
         self.view_settings = view_settings
@@ -88,7 +93,7 @@ class PageCursor(object):
         self.index = index
         self.pixel = 0
 
-    def move_cursor(self, amount):
+    def move(self, amount):
         """ Move the cursor `amount` pixels, where amount can be positive or 
             negative (for moving backward).
             The amount can be more than what's actually available to move on, 
@@ -96,11 +101,11 @@ class PageCursor(object):
 
             @returns: the amount of pixels actually moved
         """
-        amount_moved = self._move_cursor(amount) 
+        amount_moved = self._move(amount) 
         self.index = self.page_list.reset_index(self.index)
         return amount_moved
 
-    def _move_cursor(self, amount):
+    def _move(self, amount):
         """ Get a list of heights and use that as a basis for moving.
 
             We consider the pixel position to be local if it's bound to 

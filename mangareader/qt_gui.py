@@ -22,6 +22,8 @@ if os.name == 'posix':
 elif os.name == 'nt':
     test_path = "C:\manga\sample\\" # TEMP
 
+test_path = ''
+
 # constants    
 g_step = 30
 g_big_step = 600

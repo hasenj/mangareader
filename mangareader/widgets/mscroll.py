@@ -24,7 +24,8 @@ from mangareader.widgets import fstrip
 from mangareader.tree.walk import step as walk_step
 from mangareader.tree.view import context as view_context
 from mangareader.bgloader import queue_image_loader
-from mangareader.widgets.scrolling import ViewSettings
+from mangareader.widgets.scrolling import (
+            ViewSettings, PageCursor, get_loaded_context)
 
 import os.path
 
@@ -43,7 +44,6 @@ class Page(object):
         self.frame = None # the QImage object
         self.scaled = {}  # a mapping from percentage to a scaled QImage 
 
-    @property
     def is_loaded(self): 
         return self.loading == 2
 
@@ -138,192 +138,95 @@ class ImageCache(object):
 
 class PageList(object):
     def __init__(self, root):
-        """ `root` is the manga root directory """
+        """ Partial directory view that can be moved around (can't be resized
+            yet, though that might be useful)
+
+            This works internally by storing a node list an using an image
+            cache to get the image corresponding to a certain node
+
+            @param root: the manga root directory
+        """
         self.tree = fetch.DirTree(root)
         self.nodes = []
         self.img_cache = ImageCache()
         first_node = walk_step(self.tree, self.tree.root)
         if first_node is None:
             raise EmptyMangaException
-        self._reset_window(first_node)
-        self.index = 0
-        self.cursor_pixel = 0
-        self.zoom_factor = 100 # in percentage
+        self._reset_window_to_node(first_node)
 
-    def loaded_pages_count(self):
-        sum = 0
-        for page in self.as_list():
-            if page.is_loaded:
-                sum +=1
-        return sum
-
-    def page(self, index):
+    def page_at(self, index):
         """fake list of Page objects"""
-        return self.img_cache.get(self.page_path(index))
+        return self.img_cache.get(self.page_path_at(index))
 
-    def page_path(self, index):
+    def page_path_at(self, index):
         return self.nodes[index].path
 
     def length(self):
         return len(self.nodes)
-
-    def as_list(self):
-        """get a list of the pages we have"""
-        return map(self.page, range(len(self.nodes)))
+    __length__ = length
 
     @property
     def current_page(self):
         return self.page(self.index)
 
-    def change_chapter(self, path):
+    # TODO: fix renames
+    # def change_chapter(self, path):
+    def reset_to_path(self, path):
         chapter_node = self.tree.get_node(path)
         first_node = walk_step(self.tree, chapter_node)
-        self._reset_window(first_node)
+        self._reset_window_to_node(first_node)
         self.cursor_pixel = 0
 
-    def scroll_down(self, step=100):
-        self.move_cursor(step)
-    
-    def scroll_up(self, step=100):
-        self.move_cursor(-step)
-
-    def move_cursor(self, amount):
-        """Move the cursor `amount` pixels
-        @returns: the amount of pixels actually moved
-        """
-        if not self.current_page.is_loaded: return 0
-        given_amount = amount
-        def next_available(offset=1):
-            """Can we move to the next page?
-            @returns: True if the next page exists and is loaded; False otherwise
-            @notes: can be used for previous by passing offset=-1
-            """
-            index = lambda: self.index+offset
-            return 0 <= index() < self.length() and self.page(index()).is_loaded
-        def prev_available(): return next_available(offset=-1)
-
-        curr_height_limit = lambda: self.current_page.height - 1
-
-        def move_to_page_end(max=None):
-            """@returns: amount moved"""
-            amount = curr_height_limit() - self.cursor_pixel
-            if max and max < amount: amount = max
-            self.cursor_pixel += amount
-            return amount
-
-        def jump_next_page(room=0):
-            """@returns: amount moved"""
-            if not self.cursor_pixel == curr_height_limit(): return 0 # more like an assert?
-            if room == 0 or not next_available(): return 0
-            self.index += 1
-            self.cursor_pixel = 0
-            return 1
-
-        def can_move_down():
-            """is there anything to scroll down to anyway?"""
-            return self.cursor_pixel < curr_height_limit() or next_available()
-
-        def move_to_page_top(max=None):
-            """@returns: amount moved"""
-            amount = -self.cursor_pixel
-            if max and abs(max) < abs(amount): amount = max
-            self.cursor_pixel += amount
-            return -amount
-
-        def jump_prev_page(room=0):
-            """@returns: amount moved"""
-            if not self.cursor_pixel == 0: return 0 # more like an assert?
-            if room == 0 or not prev_available(): return 0
-            self.index -= 1
-            self.cursor_pixel = curr_height_limit()
-            return -1
-
-        def can_move_up():
-            """is there anything to scroll up to anyway?"""
-            return self.cursor_pixel > 0 or prev_available()
-
-        # test for just moving forward
-        print "scrolling"
-        while amount > 0 and can_move_down():
-            print '\t', amount
-            amount -= move_to_page_end(max=amount)
-            amount -= jump_next_page(room=amount)
-        while amount < 0:
-            print '\t', amount
-            a = amount
-            amount += move_to_page_top(max=amount)
-            amount += jump_prev_page(room=amount)
-            if amount - a == 0: break
-        print "/scrolling"
-
-        self._check_reset_window()
-                
-    def move_index(self, steps):
-        """ move the index `steps` steps, and optionally readjusts the context/window
-            @returns: whether or not we overstepped our boundaries
-        """
-        if steps not in (1, -1):
-            raise Exception("stepping move than one step is not supported")
-        self._check_reset_window()
-        new_index = self.index + steps
-        if new_index not in range(0, len(self.nodes)):
-            return False
-        self.index = new_index
-        return True # ok
-
-    def _reset_window(self, node=None):
+    def _reset_window_to_node(self, node):
         """resets the view/window around the current file path"""
         if node is None: node = self.nodes[self.index]
         list = view_context(self.tree, node)
-        index = list.index(node)
+        new_index = list.index(node)
         self.nodes = list
-        self.index = index
+        # also reset the image cache; this is essential to free up some ram
         path_list = [node.path for node in self.nodes]
         self.img_cache.reset(path_list)
+        return new_index
 
-    def _check_reset_window(self):
-        """check if we should reset window, and do it!"""
-        if self.index < 2 or self.index + 4 > len(self.nodes):
-            print "resetting!"
-            self._reset_window()
+    def reset_window(self, index):
+        return self._reset_window_to_node(self.nodes[index])
 
 class EmptyPageList(object):
-    def __init__(self):
-        self.nodes = []
-    def scroll_up(self, step=0): pass
-    def scroll_down(self, step=0): pass
-    def move_cursor(self, amount): pass
-    def loaded_pages_count(self): return -1
-    def as_list(self): return []
+    def __init__(self): pass
+    def length(self): return 0
+    __length__ = length
+    def reset_window(self, index): pass
 
 class MangaScroller(object):
-    def __init__(self, root):
+    def __init__(self, root, view_settings=None):
         try: 
             self.page_list = PageList(root)
+            if view_settings is None:
+                view_settings = ViewSettings()
+            self.view_settings = view_settings
+            self.cursor = PageCursor(self.page_list, view_settings)
         except EmptyMangaException: 
             print "Warning: empty manga"
             self.page_list = EmptyPageList()
+        # TODO: set to false after painting if there's
+        # nothing more to paint
+        self.dirty = True 
 
     def change_chapter(self, path):
-        self.page_list.change_chapter(path)
+        self.page_list.reset_to_path(path)
 
     def scroll_down(self, step=100):
-        self.page_list.scroll_down(step)
+        self.move_cursor(100)
     
     def scroll_up(self, step=100):
-        self.page_list.scroll_up(step)
+        self.move_cursor(-100)
 
     def move_cursor(self, amount):
-        self.page_list.move_cursor(amount)
+        self.cursor.move(amount)
 
-    def loaded_pages_count(self):
-        return self.page_list.loaded_pages_count()
-
-    def set_zoom_factor(self, value):
-        """dummy method that's not used right now!!"""
-        self.zoom_factor = value
-
-    # TODO This will need a big (good :) rewrite!
+    # TODO: This will need a big (good :) rewrite!
+    # TODO:should mark whether or not some space is left unrendered so that we
+    # know when we need to render image when they load
     def paint_using(self, painter, view_settings):
         """
             Render scroller using painter
@@ -332,20 +235,21 @@ class MangaScroller(object):
             @returns: number of frames rendered (so we know if we need to update)
         """
         # First, load any unloaded image
-        for page in self.page_list.as_list():
-            page.load() # this loads the page _in the background_, unless already loaded
-        if self.page_list.loaded_pages_count() <= 0: return
-        index = self.page_list.index
+        for i in range(self.page_list.length()):
+            self.page_list.page_at(i).load() # this is non-blocking
+        findex, loaded = get_loaded_context(self.page_list, self.cursor.index)
+        index = self.cursor.index - findex
         limit = index + 3 # TEMP
-        pages = self.page_list.as_list()[index:limit]
-        frames = [p.get_frame(view_settings) for p in pages if p.is_loaded]
+        pages = loaded[index:limit]
+        frames = [p.get_frame(view_settings) for p in pages]
         if len(frames) == 0: return 0
-        original_height = pages[0].get_height()
+        # XXX: this is for transorming the image according to view_settings
+        # TODO: refactor
+        original_height = pages[0].get_height() 
         new_height = pages[0].get_height(view_settings)
         # TODO factorize this calculation .. it might allow us more flexibility/options
         # such as interpreting the cursor to be in the middle instead of the top
-        y = -self.page_list.cursor_pixel * new_height / original_height
-        # print "y is:", y
+        y = -self.cursor.pixel * new_height / original_height
         fstrip.paint_frames(painter, frames, y)
         return len(frames) 
 
