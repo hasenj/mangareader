@@ -119,8 +119,8 @@ class PageCursor(object):
             specific index, but relative to the whole list.
             We use a method to translate (local,index)<->global position, so
             moving the cursor is simply a matter of seeing the max available
-            space to move across, doing the move globally, then translating
-            it to local coordinates again
+            space to move across, doing the move globally, then translating it
+            to local coordinates again
         """
         first_index, loaded_context = get_loaded_context(self.page_list, self.index)
         heights = (page.get_height() for page in loaded_context)

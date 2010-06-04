@@ -65,13 +65,10 @@ class Page(object):
             _frame = fstrip.create_frame(self.path)
             self.frame = _frame
             self._set_loading_status('done')
-            # print "done loading", self.path
-        # print "queueing:", self.path
         self._set_loading_status('loading')
         queue_image_loader(image_loader)
 
     def _set_loading_status(self, status):
-        print status
         self.loading = {
                 'loading':1,
                 'done':2
@@ -247,7 +244,8 @@ class MangaScroller(object):
         new_height = pages[0].get_height(self.view_settings)
         # TODO factorize this calculation .. it might allow us more flexibility/options
         # such as interpreting the cursor to be in the middle instead of the top
-        y = -self.cursor.pixel * new_height / original_height
+        y = -self.cursor.pixel * float(new_height) / float(original_height)
+        y = int(y)
         fstrip.paint_frames(painter, frames, y)
         # return len(frames) 
 
