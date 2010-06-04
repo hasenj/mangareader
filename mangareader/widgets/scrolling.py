@@ -123,8 +123,7 @@ class PageCursor(object):
             it to local coordinates again
         """
         first_index, loaded_context = get_loaded_context(self.page_list, self.index)
-        heights = (page.get_height(self.view_settings) 
-                for page in loaded_context)
+        heights = (page.get_height() for page in loaded_context)
 
         def minmax(low, val, max):
             if low > val:
