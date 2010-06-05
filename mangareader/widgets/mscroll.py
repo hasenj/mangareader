@@ -238,18 +238,17 @@ class MangaScroller(object):
         pages = loaded[index:limit]
         frames = [p.get_frame(self.view_settings) for p in pages]
         if len(frames) == 0: return 0
-        # XXX: this is for transorming the image according to view_settings
-        # TODO: refactor
-        original_height = pages[0].get_height() 
-        new_height = pages[0].get_height(self.view_settings)
-        # TODO factorize this calculation .. it might allow us more flexibility/options
-        # such as interpreting the cursor to be in the middle instead of the top
-        y = -self.cursor.pixel * float(new_height) / float(original_height)
-        y = int(y)
+        # transorming the image according to view_settings
+        y = -transformed_y_coord(self.view_settings, pages[0], self.cursor.pixel)
         fstrip.paint_frames(painter, frames, y)
         # return len(frames) 
 
-                
+def transformed_y_coord(view_settings, page, y):
+    original_height = page.get_height()
+    new_height = page.get_height(view_settings)
+    y = y * float(new_height) / float(original_height)
+    return int(y)
+
 class EmptyMangaException(Exception): pass
 class FetchError(Exception): pass
 
