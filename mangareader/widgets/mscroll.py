@@ -38,8 +38,8 @@ def get_desired_display_width(image, view_settings=None):
     return view_settings.transformed_width(image.width())
 
 class Page(object):
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, node):
+        self.path = node.path #XXX
         self.loading = 0  # 0 = not loaded; 1 = loading; 2 = loaded
         self.frame = None # the QImage object
         self.scaled = {}  # a mapping from percentage to a scaled QImage 
@@ -62,7 +62,7 @@ class Page(object):
         """
         if self.loading > 0: return
         def image_loader(): # this will run in a background thread
-            _frame = fstrip.create_frame(self.path)
+            _frame = fstrip.load_image(self.path)
             self.frame = _frame
             self._set_loading_status('done')
         self._set_loading_status('loading')
@@ -118,20 +118,24 @@ class ImageCache(object):
     def contains(self, path):
         return self.map.has_key(path)
 
-    def add(self, path):
+    def add(self, node):
+        path = node.path
         if self.contains(path): return
-        page = Page(path)
+        page = Page(node) #XXX
         self.map[path] = page
         # page.load(max_width) # don't load yet ..
     def remove(self, path):
         del self.map[path]
-    def reset(self, path_list):
+    def reset(self, node_list):
         """remove paths not in path_list, load pages not already loaded"""
-        old_paths = set(self.map.keys()) - set(path_list)
-        for path in old_paths:
-            self.remove(path)
-        for path in path_list:
-            self.add(path)
+        path_list = [node.path for node in node_list]
+        dead_paths = set(self.map.keys()) - set(path_list)
+        for node in node_list:
+            path = node.path
+            if path in dead_paths:
+                self.remove(path) #XXX
+            else:
+                self.add(node) #XXX
 
 class PageList(object):
     def __init__(self, root):
@@ -180,8 +184,7 @@ class PageList(object):
         new_index = list.index(node)
         self.nodes = list
         # also reset the image cache; this is essential to free up some ram
-        path_list = [node.path for node in self.nodes]
-        self.img_cache.reset(path_list)
+        self.img_cache.reset(self.nodes) #XXX
         return new_index
 
     def reset_window(self, index):

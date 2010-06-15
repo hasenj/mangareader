@@ -11,18 +11,14 @@
 
 from PyQt4 import QtGui, QtCore
 
-def create_frame(image_path, width=None):
+def load_image(image_path, width=None):
     """Load a picture into a frame
        @param width: optional, if present, scale image width to match width
        @returns: a frame object
        @note: really, it returns a QImage, but we pretend it's not a qt object, but rather
        a frame object!!!
     """
-    # TODO: add some padding maybe
-    frame = QtGui.QImage(image_path)
-    if width: # XXX this is duplicated in mscroll's image_loader() (and it's not even used here)
-        frame = frame.scaledToWidth(width, QtCore.Qt.SmoothTransformation)
-    return frame
+    return QtGui.QImage(image_path)
 
 def paint_frame(painter, frame, y):
     """Draw a single frame at vertical position `y` """
