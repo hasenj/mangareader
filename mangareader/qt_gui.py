@@ -81,10 +81,29 @@ class MainWindow(QtGui.QWidget):
             self.manga_frame.reset_zoom()
         self.manga_frame.repaint()
 
+    def mousePressEvent(self, event):
+        btn = event.button()
+        self.posMouseOrigin = event.pos()
+        if btn == QtCore.Qt.LeftButton:
+            self.funcMouseMove = self.mousePan
+        elif btn == QtCore.Qt.RightButton:
+            self.funcMouseMove = self.mouseZoom
+
+    def mouseMoveEvent(self, event):
+        delta = self.posMouseOrigin.y() - event.pos().y()
+        self.funcMouseMove(delta)
+        self.posMouseOrigin = event.pos()
+        self.manga_frame.repaint()
+
     def wheelEvent(self, event):
         self.manga_frame.scrollDown(-event.delta())
         self.manga_frame.repaint()
 
+    def mousePan(self, delta):
+        self.manga_frame.scrollDown(delta)
+
+    def mouseZoom(self, delta):
+        self.manga_frame.zoom_out(delta)
 
 import sys
 
