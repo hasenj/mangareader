@@ -39,6 +39,14 @@ class MainWindow(QtGui.QWidget):
 
         self.setLayout(vbox_container)
 
+        self.cursors = { 
+            'default': QtGui.QCursor(QtCore.Qt.OpenHandCursor),
+            'pan': QtGui.QCursor(QtCore.Qt.ClosedHandCursor),
+            'zoom': QtGui.QCursor(QtCore.Qt.SizeVerCursor),
+            }
+
+        self.setCursor(self.cursors['default'])
+
     def choose_manga(self):
         dir = QtGui.QFileDialog.getExistingDirectory(self, "Choose Manga", os.path.join(self.current_manga_path, '..'))
         if not dir: return
@@ -81,10 +89,38 @@ class MainWindow(QtGui.QWidget):
             self.manga_frame.reset_zoom()
         self.manga_frame.repaint()
 
+    def mousePressEvent(self, event):
+        btn = event.button()
+        self.posMouseOrigin = event.pos()
+        if btn == QtCore.Qt.LeftButton:
+            self.setCursor(self.cursors['pan'])
+            self.funcMouseMove = self.mousePan
+        elif btn == QtCore.Qt.RightButton:
+            self.setCursor(self.cursors['zoom'])
+            self.funcMouseMove = self.mouseZoom
+
+    def mouseReleaseEvent(self, event):
+        self.setCursor(self.cursors['default'])
+
+    def mouseMoveEvent(self, event):
+        delta = self.posMouseOrigin.y() - event.pos().y()
+        self.funcMouseMove(delta)
+        self.posMouseOrigin = event.pos()
+        self.manga_frame.repaint()
+
+    def mouseDoubleClickEvent(self, event):
+        self.manga_frame.reset_zoom()
+        self.manga_frame.repaint()
+
     def wheelEvent(self, event):
         self.manga_frame.scrollDown(-event.delta())
         self.manga_frame.repaint()
 
+    def mousePan(self, delta):
+        self.manga_frame.scrollDown(delta)
+
+    def mouseZoom(self, delta):
+        self.manga_frame.zoom_out(delta)
 
 import sys
 
