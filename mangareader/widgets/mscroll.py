@@ -170,12 +170,10 @@ class PageList(object):
     def current_page(self):
         return self.page(self.index)
 
-    # def change_chapter(self, path):
     def reset_to_path(self, path):
         chapter_node = self.tree.get_node(path)
         first_node = walk_step(self.tree, chapter_node)
-        self._reset_window_to_node(first_node)
-        self.cursor_pixel = 0
+        return self._reset_window_to_node(first_node)
 
     def _reset_window_to_node(self, node):
         """resets the view/window around the current file path"""
@@ -212,7 +210,8 @@ class MangaScroller(object):
         self.dirty = True 
 
     def change_chapter(self, path):
-        self.page_list.reset_to_path(path)
+        self.cursor.index = self.page_list.reset_to_path(path)
+        self.cursor.pixel = 0
 
     def scroll_down(self, step=100):
         self.move_cursor(step)
