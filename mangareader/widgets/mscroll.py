@@ -131,11 +131,9 @@ class ImageCache(object):
         path_list = [node.path for node in node_list]
         dead_paths = set(self.map.keys()) - set(path_list)
         for node in node_list:
-            path = node.path
-            if path in dead_paths:
-                self.remove(path) #XXX
-            else:
-                self.add(node) #XXX
+            self.add(node) #XXX
+        for path in dead_paths:
+            self.remove(path) #XXX
 
 class PageList(object):
     def __init__(self, root):
